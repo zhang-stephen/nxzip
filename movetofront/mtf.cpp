@@ -48,7 +48,7 @@ static vector<uint8_t> __dict(256);
  * @retval	bool
  * @note	None
  */
-bool NXZIP::Text::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rArray)
+bool NXZIP::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rArray)
 {
     // Parameters Check
     if(nullptr == rArray || 0 == nSize || nullptr == nString)
@@ -94,7 +94,7 @@ bool NXZIP::Text::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_
  * @retval	bool
  * @note	None
  */
-bool NXZIP::Text::NXZ_MoveToFront_Inverse(const uint8_t* nArray, uint32_t nSize, uint8_t* rString)
+bool NXZIP::NXZ_MoveToFront_Inverse(const uint8_t* nArray, uint32_t nSize, uint8_t* rString)
 {
     // Parameters Check
     if(nullptr == nArray || 0 == nSize || nullptr == rString)

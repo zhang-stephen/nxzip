@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-namespace NXZIP::Text
+namespace NXZIP
 {
 	bool NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rArray);
 	bool NXZ_MoveToFront_Inverse(const uint8_t* nArray, uint32_t nSize, uint8_t* rString);
