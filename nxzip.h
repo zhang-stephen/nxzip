@@ -6,6 +6,8 @@
 #ifndef __NXZIP_H
 #define __NXZIP_H
 
+#include "movetofront/mtf.h"
+
 #endif /*__NXZIP*/
 
 //EOF
