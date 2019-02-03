@@ -7,6 +7,7 @@
 #define __NXZIP_H
 
 #include "movetofront/mtf.h"
+#include "bwt/bwt.h"
 
 #endif /*__NXZIP*/
 

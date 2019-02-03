@@ -10,16 +10,19 @@
 
 namespace NXZIP
 {
-	class BWT_CoreClass
+	class BWT
 	{
 	public:
+		uint8_t* cstr;			/* !< The Result Array in C Style */
+		uint32_t index;			/* !< The position of flag character */
+		uint32_t length;		/* !< The Length of Result Array */
 
-	private:
-		uint32_t index;
-		uint8_t* cstr;
+		BWT(uint32_t size);
+		~BWT(void);
 	};
-	
-	bool NXZ_BWTransform();
+
+	bool NXZ_BWTransform(uint8_t* srcArray, uint32_t Length, BWT* bwt);
+	bool NXZ_BWTransform_Inverse(BWT* ibwt, uint8_t* dstArray);
 }
 
 #endif /*__BWT_H*/
