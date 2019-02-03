@@ -13,9 +13,10 @@ int: ../build/objs/debug/
 
 # Source File
 src: ../main.cpp
+src: ../bwt/bwt.cpp
 
 # Include Path
-inc: ../
+inc: ../, ../movetofront, ../bwt
 
 # Extra Libraries Path
 lib: 
@@ -24,6 +25,6 @@ lib:
 link: stdc++, 
 
 # the Compiling Flags to GCC
-flag: --std=gnu++17, -g, -O0, -Wall
+flag: --std=gnu++17, -g3, -O0, -Wall
 
 # EOF
