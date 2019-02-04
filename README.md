@@ -37,6 +37,7 @@ typedef struct
 | language | Compiler | Project Management | Version Control | Project Name | 
 | :-: | :-: | :-: | :-: | :-: |
 | c++17(gnu++17) | GCC v8.2.0 | cmake 3.13.2 | [github] | [nxzip](https://github.com/stark-zhang/nxzip) |
+
 任务列表
 - [x] 实现基本的BWT算法
 - [ ] 实现基本的IBWT算法
