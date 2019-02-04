@@ -21,7 +21,7 @@ namespace NXZIP
 		~BWT(void);
 	};
 
-	bool NXZ_BWTransform(uint8_t* srcArray, uint32_t Length, BWT* bwt);
+	bool NXZ_BWTransform(uint8_t* srcArray, BWT* bwt);
 	bool NXZ_BWTransform_Inverse(BWT* ibwt, uint8_t* dstArray);
 }
 
