@@ -50,6 +50,7 @@ NXZIP::BWT::BWT(uint32_t size)
 {
 	this->length = size; 
 	this->cstr = new uint8_t[size];
+	this->index = 0u;
 }
 
 /**
@@ -90,18 +91,22 @@ NXZIP::BWT::~BWT(void)
 
 /**
  * @brief	The Burrows-Wheeler Transform
+ * @param 	uint8_t* srcArray: the Array to be transformed
+ * @param	BWT* bwt: the result after BWT
+ * @return	bool: true means no error occured
+ * @note	!!! Length of srcArray must be as same as bwt->length
 **/
-bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, uint32_t Length, BWT* bwt)
+bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, BWT* bwt)
 {
 	/* Parameters Check */
-	if(nullptr == srcArray || nullptr == bwt || nullptr == bwt->cstr || Length == 0u)
+	if(nullptr == srcArray || nullptr == bwt || nullptr == bwt->cstr || 0u == bwt->length)
 	{
 		return false;
 	}
 
 	/* apply the memory */
-	::arrayCache* cache = new ::arrayCache(Length);
-	SuffixArray_TypeDef* suf = new SuffixArray_TypeDef[Length + 1u];
+	::arrayCache* cache = new ::arrayCache(bwt->length);
+	SuffixArray_TypeDef* suf = new SuffixArray_TypeDef[bwt->length + 1u];
 	SuffixArray_TypeDef* TMP = new SuffixArray_TypeDef{nullptr, 0u, 0u};
 	uint32_t tmplen = 0u;
 
@@ -158,7 +163,6 @@ bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, uint32_t Length, BWT* bwt)
 		}
 	}
 
-	/* FIXME: pointer position */
 	/* Get the Result */
 	/* before index */
 	for(uint32_t i = 0; i < bwt->index; i++)
@@ -179,8 +183,30 @@ bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, uint32_t Length, BWT* bwt)
 	return true;
 }
 
+/**
+ * @brief	Inverse-BWT
+ * @param	BWT* ibwt: the BWT Sequence
+ * @param	uint8_t* dstArray: Distance Array to receive the origin Array
+ * @return	bool: true means no error occured
+ * @note	!!! Length of dstArray must be as same as ibwt->length
+**/
+bool NXZIP::NXZ_BWTransform_Inverse(BWT* ibwt, uint8_t* dstArray)
+{
+	/* Parameters Check */
+	if(nullptr == ibwt || nullptr == ibwt->cstr || nullptr == dstArray || 0u == ibwt->length)
+	{
+		return false;
+	}
+}
+
 /* Non-Public Method */
 
+/**
+ * @brief	copy origin Array to cache(for next operations)(Non-Public)
+ * @param	uint8_t* srcArray: Array to copy
+ * @return	None
+ * @note	None
+**/ 
 void ::arrayCache::copy_to_cache1(uint8_t* srcArray)
 {
 	for(uint32_t i = 0; i < this->length - 1u; i++)
@@ -188,6 +214,7 @@ void ::arrayCache::copy_to_cache1(uint8_t* srcArray)
 		this->cache1[i] = srcArray[i];
 	}
 
+	/* insert the flag character */
 	this->cache1[this->length - 1u] = -1;
 }
 
