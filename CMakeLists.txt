@@ -20,12 +20,12 @@ include_directories(
 )
 
 # Source Path
-aux_source_directory(./bwt SRC_LIST)
-aux_source_directory(./movetofront SRC_LIST)
-aux_source_directory(./ SRC_LIST)
+aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithms
+aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithms
+aux_source_directory(./ SRC_LIST)				# The MainCpp Path
 
 # Target Building
-add_executable(nxzip-debug ${SRC_LIST})
+add_executable(nxzip-debug ${SRC_LIST})			# Output Type: Executable Binary
 
 # Link Libs
 
