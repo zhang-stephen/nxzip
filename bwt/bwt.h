@@ -6,8 +6,6 @@
 #ifndef __BWT_H
 #define __BWT_H
 
-#include <cstdint>
-
 namespace NXZIP
 {
 	class BWT

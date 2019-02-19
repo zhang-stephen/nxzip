@@ -3,8 +3,6 @@
  * 2019-02-19
 **/ 
 
-// FIXME: the method to get index is wrong
-
 #include <iostream>
 #include <vector>
 #include <cstring>
@@ -19,7 +17,7 @@ namespace
 		uint8_t* nnstr;			/* !< the cache pointer */
 		uint32_t position;		/* !< the position in origin Array */
 		uint32_t length;		/* !< the length of nnstr */
-		bool isEndByte;			/* !< the position is the end or not */
+		bool isCompleteSeq;		/* !< the position is the end or not */
 	}SuffixArray2_TypeDef;
 
 	/**
@@ -83,12 +81,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, NXZIP::BWT* bwt)
 		suf[i].nnstr = srcArray + i;
 		suf[i].position = i;
 		suf[i].length = bwt->length - i;
-
-		if(i == bwt->length -  1u)
-		{
-			suf[i].isEndByte = true;
-		}
-		else suf[i].isEndByte = false;
+		suf[i].isCompleteSeq = (suf[i].position == 0);
 	}
 
 	/* Bubble sort for Logic Suffix Array */
@@ -118,7 +111,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, NXZIP::BWT* bwt)
 	{
 		bwt->cstr[i] = (suf[i].position == 0u) ? srcArray[bwt->length-1u] : suf[i].nnstr[-1];
 
-		if(suf[i].isEndByte == true)
+		if(suf[i].isCompleteSeq == true)
 		{
 			bwt->index = i;
 		}
