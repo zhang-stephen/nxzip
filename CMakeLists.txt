@@ -9,12 +9,15 @@ cmake_minimum_required(VERSION 3.10)
 project(nxzip)
 
 # ISO C++17
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)					# C++ Standard
+set(CMAKE_CXX_STANDARD_REQUIRED 17)			# Require C++17 to Compile(use the filesystem in c++17, not boost::filesystem)
 
 # Include Path
 include_directories(
 	./3rdlib			# the Third-Party Libraries
 	./bwt				# the BWT header and source file
+	./file				# the file IO header and source file
+	./huffman			# the Huffman-Coding header and source file
 	./movetofront		# the MTF header and source file
 	./					# main directory
 )
