@@ -5,8 +5,10 @@
 
 #include <iostream>
 #include <vector>
-#include <cstdlib>
+#include <cstring>
 #include "bwt.h"
+
+#define ENF -1
 
 /* Expose some Member of STL */
 /* for Inverse-BWT */
@@ -39,6 +41,22 @@ namespace
 		/* Public Method */
 		void copy_to_cache1(uint8_t* srcArray);
 	};
+
+	template<typename T> 
+	int sequene_cmp(T* s1, T* s2, size_t count)
+	{
+		const T* seq1 = s1;
+		const T* seq2 = s2;
+
+		while(count --> 0u)
+		{
+			if(*seq1++ != *seq2++)
+			{
+				return (seq1[-1] < seq2[-1]) ? -1 : 1;
+			}
+		}
+		return 0;
+	}
 }
 
 /* Public Class BWT functions */
@@ -118,28 +136,23 @@ bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, BWT* bwt)
 	{
 		suf[i].nnstr = cache->cache1 + i;
 		suf[i].position = i;
-		suf[i].length = cache->length - i - 1u;
+		suf[i].length = cache->length - i;
 	}
 
 	/* Bubble sort for Logic Suffix Array */
 	/* Time Complicity: O(n^3) */
 	/* TODO: Bubble sort --> Quick sort */
-	for(uint32_t i = 0; i < cache->length; i++)
+	for(uint32_t i = 0; i < cache->length - 1u; i++)
 	{
-		for(uint32_t j = 0; j < cache->length - i; j++)
+		for(uint32_t j = 0; j < cache->length - 1u; j++)
 		{
-			tmplen = (suf[j].length < suf[j+1].length) ? suf[j].length : suf[j+1].length;
+			tmplen = ((suf[j].length < suf[j+1].length) ? suf[j].length : suf[j+1].length);
 
-			for(uint32_t k = 0; k < tmplen; k++)
+			if(::sequene_cmp(suf[j].nnstr, suf[j+1].nnstr, tmplen) == 1)
 			{
-				if(suf[j].nnstr[k] > suf[j+1].nnstr[k])
-				{
-					memcpy((void*)TMP, (void*)(suf+j), sizeof(SuffixArray_TypeDef));
-					memcpy((void*)(suf+j), (void*)(suf+j+1), sizeof(SuffixArray_TypeDef));
-					memcpy((void*)(suf+j+1), (void*)TMP, sizeof(SuffixArray_TypeDef));
-
-					break;
-				}
+				memcpy((void*)TMP, (void*)(suf+j), sizeof(SuffixArray_TypeDef));
+				memcpy((void*)(suf+j), (void*)(suf+j+1), sizeof(SuffixArray_TypeDef));
+				memcpy((void*)(suf+j+1), (void*)TMP, sizeof(SuffixArray_TypeDef));
 			}
 		}
 	}
@@ -157,7 +170,7 @@ bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, BWT* bwt)
 		}
 
 		/* get the position of flag character */
-		if(*(cache->cache2 + i ) == -1)
+		if(*(cache->cache2 + i ) == ENF)
 		{
 			bwt->index = i;
 		}
@@ -197,6 +210,8 @@ bool NXZIP::NXZ_BWTransform_Inverse(BWT* ibwt, uint8_t* dstArray)
 	{
 		return false;
 	}
+
+	return true;
 }
 
 /* Non-Public Method */
@@ -215,7 +230,7 @@ void ::arrayCache::copy_to_cache1(uint8_t* srcArray)
 	}
 
 	/* insert the flag character */
-	this->cache1[this->length - 1u] = -1;
+	this->cache1[this->length - 1u] = ENF;
 }
 
 //EOF
