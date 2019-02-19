@@ -1,5 +1,5 @@
 /**
- * BWT Algorithm (source file)
+ * BWT Algorithm with the End Flag (source file)
  * 2019-02-02
  */
 
@@ -42,8 +42,11 @@ namespace
 		void copy_to_cache1(uint8_t* srcArray);
 	};
 
+	/**
+	 * @brief	Compare sequences by subscript(be like memcmp)
+	 */
 	template<typename T> 
-	int sequene_cmp(T* s1, T* s2, size_t count)
+	int sequence_cmp(T* s1, T* s2, size_t count)
 	{
 		const T* seq1 = s1;
 		const T* seq2 = s2;
@@ -122,7 +125,7 @@ bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, BWT* bwt)
 		return false;
 	}
 
-	/* apply the memory */
+	/* Allocate the memory */
 	::arrayCache* cache = new ::arrayCache(bwt->length);
 	SuffixArray_TypeDef* suf = new SuffixArray_TypeDef[bwt->length + 1u];
 	SuffixArray_TypeDef* TMP = new SuffixArray_TypeDef{nullptr, 0u, 0u};
@@ -142,13 +145,14 @@ bool NXZIP::NXZ_BWTransform(uint8_t* srcArray, BWT* bwt)
 	/* Bubble sort for Logic Suffix Array */
 	/* Time Complicity: O(n^3) */
 	/* TODO: Bubble sort --> Quick sort */
+	/* Time Complexity: O(n^3) */
 	for(uint32_t i = 0; i < cache->length - 1u; i++)
 	{
 		for(uint32_t j = 0; j < cache->length - 1u; j++)
 		{
 			tmplen = ((suf[j].length < suf[j+1].length) ? suf[j].length : suf[j+1].length);
 
-			if(::sequene_cmp(suf[j].nnstr, suf[j+1].nnstr, tmplen) == 1)
+			if(::sequence_cmp(suf[j].nnstr, suf[j+1].nnstr, tmplen) == 1)
 			{
 				memcpy((void*)TMP, (void*)(suf+j), sizeof(SuffixArray_TypeDef));
 				memcpy((void*)(suf+j), (void*)(suf+j+1), sizeof(SuffixArray_TypeDef));
