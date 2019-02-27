@@ -4,7 +4,7 @@
 **/ 
 
 #include <iostream>
-#include <vector>
+#include <algorithm>
 #include <cstring>
 #include "bwt.h"
 
@@ -43,7 +43,7 @@ namespace
 	 * @brief	Exchange specified memory ereas
 	 */
 	template<typename T>
-	inline void nxz_mem_exchange(T* mem1, T* mem2, size_t len = sizeof(T))
+	inline void memoryExchange(T* mem1, T* mem2, size_t len = sizeof(T))
 	{
 		T* tmpmem = new T;
 
@@ -53,19 +53,77 @@ namespace
 
 		delete tmpmem;
 	}
+
+	/**
+	 * @brief get the index of specific element
+	 */
+	template<typename T>
+	inline int64_t getIndexViaTimes(T* seq, T elem, size_t len, uint32_t times)
+	{
+		/* parameters check */
+		if(nullptr == seq || times == 0 || times > len)
+		{
+			return -1;
+		}
+
+		int64_t i = 0u;
+		uint32_t tmptimes = 0u;
+
+		while(len --> 0u)
+		{
+			if(seq[i] == elem)
+				tmptimes++;
+
+			if(tmptimes == times)
+				break;
+
+			i++;
+		}
+
+		if(tmptimes == 0u || tmptimes < times)
+			i = -1;
+
+		return i;
+	}
+
+	/**
+	 * @brief Get the Times in specific memory area
+	 */
+	template<typename T>
+	inline int64_t getTimesViaIndex(T* seq, T elem, size_t posBegin, size_t posEnd)
+	{
+		/* Parametes Check */
+		if(nullptr == seq || posBegin > posEnd)
+		{
+			return -1;
+		}
+
+		uint32_t times = 0u;
+
+		for(size_t i = posBegin; i < posEnd; i++)
+		{
+			if(seq[i] == elem)
+			{
+				times++;
+			}
+		}
+
+		return times;
+	}
 }
 
 /**
  * @brief	The Burrows-Wheeler Transform 2 
  * @param 	uint8_t* srcArray: the Array to be transformed
+ * @param	uint32_t length: length of srcArray(only for verifying)
  * @param	BWT* bwt: the result after BWT
  * @return	bool: true means no error occured
  * @note	!!! Length of srcArray must be as same as bwt->length
 **/
-bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, NXZIP::BWT* bwt)
+bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt)
 {
 	/* param check */
-	if(nullptr == srcArray || nullptr == bwt || nullptr == bwt->cstr || 0u == bwt->length)
+	if(nullptr == srcArray || nullptr == bwt || nullptr == bwt->cstr || 0u == bwt->length || length != bwt->length)
 	{
 		return false;
 	}
@@ -96,12 +154,12 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, NXZIP::BWT* bwt)
 
 			if(::sequence_cmp2(suf[j].nnstr, suf[j+1].nnstr, tmplen) == 0 && suf[j].length > suf[j+1].length)
 			{
-				nxz_mem_exchange(suf+j, suf+j+1);
+				memoryExchange(suf+j, suf+j+1);
 			}
 
 			if(::sequence_cmp2(suf[j].nnstr, suf[j+1].nnstr, tmplen) == 1)
 			{
-				nxz_mem_exchange(suf+j, suf+j+1);
+				memoryExchange(suf+j, suf+j+1);
 			}
 		}
 	}
@@ -122,6 +180,46 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, NXZIP::BWT* bwt)
 	delete TMP;
 
 	return true;
-} 
+}
+
+/**
+ * @brief 	The Inverse-BWT Algorithm 2
+ * @param 	BWT* ibwt: the BWT Data Structure(member length maybe zero)
+ * @param 	uint32_t length: the length of dstArray
+ * @param 	uint8_t* dstArray: the result of IBWT 
+ * @return 	bool: true means no error occured
+ * @note	!!! Length of srcArray must be as same as bwt->length
+ */
+bool NXZIP::NXZ_BWTransform_Inverse2(NXZIP::BWT* ibwt, uint32_t length, uint8_t* dstArray)
+{
+	/* param check */
+	if(nullptr == dstArray || nullptr == ibwt || nullptr == ibwt->cstr || 0u == ibwt->length)
+	{
+		return false;
+	}
+
+	/* Allocate the memory */
+	uint32_t cursor = ibwt->index;				/* !< the position to take out element in Last Array  */
+	uint32_t tmplen = length, tmp = 0u;
+	uint8_t* firstColumn = new uint8_t[length];
+	uint8_t* lastColumn = ibwt->cstr;
+
+	/* Construct the first Column */
+	memcpy(firstColumn, lastColumn, length);
+	std::sort(firstColumn, firstColumn+length);
+
+	while(tmplen --> 0u)
+	{
+		dstArray[tmplen] = lastColumn[cursor];
+
+		tmp = (uint32_t)(::getTimesViaIndex(lastColumn, lastColumn[cursor], 0, cursor+1u));
+		cursor = (uint32_t)(::getIndexViaTimes(firstColumn, lastColumn[cursor], length, tmp));
+	}
+
+	/* Destroy Allocated Memory */
+	delete[] firstColumn;
+
+	return true;
+}
 
 /* End of File */
