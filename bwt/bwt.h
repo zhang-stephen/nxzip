@@ -19,11 +19,12 @@ namespace NXZIP
 		~BWT(void);
 	};
 
+	bool NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, BWT* bwt);
+	bool NXZ_BWTransform_Inverse2(BWT* ibwt, uint32_t length, uint8_t* dstArray);
+
+	/* !!! STOP DEVELOPING FOLLOWING APIs */
 	bool NXZ_BWTransform(uint8_t* srcArray, BWT* bwt);
 	bool NXZ_BWTransform_Inverse(BWT* ibwt, uint8_t* dstArray);
-
-	bool NXZ_BWTransform2(uint8_t* srcArray, BWT* bwt);
-	bool NXZ_BWTransform_Inverse2(BWT* ibwt, uint8_t* dstArray);
 }
 
 #endif /*__BWT_H*/

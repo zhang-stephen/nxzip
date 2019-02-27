@@ -3,6 +3,8 @@
  * 2019-02-02
  */
 
+/* !!! DISCARD: STOP DEVELOPING FOLLOWING APIs */
+
 #include <iostream>
 #include <vector>
 #include <cstring>
