@@ -108,7 +108,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 	/* TODO: optimization --> Tim Sort */
 	__pbwt_merge_sort(suf, 0, bwt->length);
 
-	/* take out the result atfter BWT */
+	/* take out the result after BWT */
 	for(uint32_t i = 0u; i < bwt->length; i++)
 	{
 		bwt->cstr[i] = (suf[i].position == 0u) ? srcArray[bwt->length-1u] : suf[i].nnstr[-1];
@@ -137,7 +137,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 bool NXZIP::NXZ_BWTransform_Inverse2(NXZIP::BWT* ibwt, uint32_t length, uint8_t* dstArray)
 {
 	/* param check */
-	if(nullptr == dstArray || nullptr == ibwt || nullptr == ibwt->cstr || 0u == ibwt->length)
+	if(nullptr == dstArray || nullptr == ibwt || nullptr == ibwt->cstr || 0u == length)
 	{
 		return false;
 	}
