@@ -37,7 +37,9 @@ typedef struct
 
 对后缀数组的字典序排序，目前使用的是冒泡排序（bubble sort），该算法的时间复杂度在最好情况下O(n\^2)（原数组已经按正序排序好），最坏情况下为O(n\^3)（原数组已经按倒序排序好），这样整个BWT算法的时间复杂度在O(n\^2)到O(n^3)之间，且实际上取不到极限情况
 
-若将这部分更换为快排序（quick sort），算法的时间复杂度最好情况下应该是O(nlogn)，最坏情况下应该是O(n^2^logn)，最好与最坏情况同上，也取不到极限情况
+~~若将这部分更换为快排序（quick sort），算法的时间复杂度最好情况下应该是O(nlogn)，最坏情况下应该是O(n^2^logn)，最好与最坏情况同上，也取不到极限情况~~
+
+此部分已经更换为归并排序（merge sort），算法时间复杂度同快排序，但是应当注意**函数调用栈（Call Stack）是否会越界**
 
 综上，BWT的算法的时间复杂度和空间复杂度的优化可以告一段落，应该考虑具体的工程实现了
 
@@ -55,66 +57,80 @@ typedef struct
 
 但是BWT变换之后得到的序列总是满足这样几条性质：
 
-1. BWT结果即BWT矩阵最后一列，对该列进行字典序排序后即为BWT矩阵的第一列
+1. BWT结果即BWT矩阵最后一列（L列），对该列进行字典序排序后即为BWT矩阵的第一列（F列）
 2. BWT矩阵的第一列和最后一列中，同一种元素的相对位置不变，即F列中第一个出现的‘A'，一定对应L列第一个出现的'A'
 3. 同一行中，F列的元素是L列元素的下一个元素  
 
 通过以上三条性质，就可以逆序写出原序列了，当然在编程实现的时候，可以一次写出正确的原序列
 
-经过验证，BWT解码算法的时间复杂度应该是O(n^2)，空间复杂度为3n，符合bzip2的“压缩占用内存是解压的三到七倍”的说法
+~~经过验证，BWT解码算法的时间复杂度应该是O(n^2)，空间复杂度为3n，符合bzip2的“压缩占用内存是解压的三到七倍”的说法~~
 
 #### 程序中的特殊实现
-```c++
-/* Non-public Namespace */
-/* source file: bwt.cpp */
-namespace 
-{
-	/* Logic Suffix Array Definition */
-	typedef struct 
+1. 匿名空间  
+
+	实现代码如下例
+
+	```c++
+	/* Non-public Namespace */
+	/* source file: bwt.cpp */
+	namespace 
 	{
-		int16_t* nnstr;			/* !< the cache pointer */
-		uint32_t position;		/* !< the position in origin Array */
-		uint32_t length;		/* !< the length of nnstr */
-	}SuffixArray_TypeDef;
+		/* Logic Suffix Array Definition */
+		typedef struct 
+		{
+			int16_t* nnstr;			/* !< the cache pointer */
+			uint32_t position;		/* !< the position in origin Array */
+			uint32_t length;		/* !< the length of nnstr */
+		}SuffixArray_TypeDef;
+	}
+	```
+	这里使用了c++中一种特殊的语法：匿名空间（anonymous namespace），它的用法相当于C语言中的`static`关键字，但是更强大
 
-	/* the cache for origin Array */
-	class arrayCache
-	{
-	public:
-		/* Class Data Member */
-		int16_t* cache1;		/* !< cache1 to store origin array */
-		int16_t* cache2;		/* !< cache2 to store result after suffix sort */
-		uint32_t length;		/* !< length of cache(sizeof(origin)+1) */
+	`static`关键字的作用：
+	- 修饰变量，使得变量作为静态变量，且对其他编译单元不可见
+	- 修饰函数，使得函数对其他编译单元不可见，只能在本单元内访问
 
-		/* Constructor and Destructor */
-		arrayCache(uint32_t length);
-		~arrayCache(void);
+	而匿名空间的作用除了以上所说，它甚至还支持对类型的隐藏，使之对其他的编译单元不可见，如上代码中，便隐藏了`SuffixArray_TypeDef`类型，而访问这个类型时，有两种写法（以定义某个数据变量为例）
 
-		/* Public Method */
-		void copy_to_cache1(uint8_t* srcArray);
-	};
-}
-```
-这里使用了c++中一种特殊的语法：匿名空间（anonymous namespace），它的用法相当于C语言中的`static`关键字，但是更强大
+	```c++
+	// SuffixArray 1
+	::SuffixArray_TypeDef suf{nullptr, 0, 0};
 
-`static`关键字的作用：
-- 修饰变量，使得变量作为静态变量，且对其他编译单元不可见
-- 修饰函数，使得函数对其他编译单元不可见，只能在本单元内访问
+	// SuffixArray 2
+	SuffixArray_TypeDef suf{nullptr, 0, 0};
+	```
 
-而匿名空间的作用除了以上所说，它甚至还支持对类型的隐藏，使之对其他的编译单元不可见，如上代码中，便隐藏了`SuffixArray_TypeDef`和`arrayCache`这两个类型，而访问这两个类型时，有两种写法（以定义某个数据变量为例）
+	匿名空间的使用需要注意：
+	+ 不宜在匿名空间中建立过于复杂的函数，只适宜于简单的helper函数
+	+ 某些命令行式调试工具可能无法命中匿名空间中的断点
+	+ 不要和`static`混用，否则可能会有无法预料的问题，甚至不建议在c++中使用该关键字
 
-```c++
-// SuffixArray
-::SuffixArray_TypeDef suf{nullptr, 0, 0};
+2. 模板元编程（Template Meta-Programming）
 
-// arrayCache
-arrayCache* cache = new arrayCache(xxx);
-```
+	接下来的所有实现均在`pbwt.h`，该头文件只允许被`bwt2.cpp`包含，重新定义了`class suffixArray`并实现了归并排序
 
-匿名空间的使用需要注意：
-+ 不宜在匿名空间中建立过于复杂的函数，只适宜于简单的helper函数
-+ 某些命令行式调试工具可能无法命中匿名空间中的断点
-+ 不要和`static`混用，否则可能会有无法预料的问题，甚至不建议在c++中使用该关键字
+	考虑到归并排序可能有其他的用处，因此使用模板实现，函数的原型如下
+
+	```c++
+	template <typename T>
+	void __pbwt_merge_sort(T *arr, uint32_t left, uint32_t right);
+	```
+
+	其中`T`为该函数可以接受的类型，在函数实例化的时候由编译器确定，如果函数接受的不是基本类型，则需要重载操作符`=`和`>`，否则该函数无法执行
+
+3. 操作符重载（Operator Reload）
+	--to be continued...
+
+#### Update
++ 2019-02-05
+初步实现基于插入唯一结束字符的BWT算法  
++ 2019-02-19 
+实现基于next值的BWT算法  
+废弃基于唯一结束符的BWT算法  
++ 2019-02-27
+实现基于next值的Inverse-BWT算法  
++ 2019-03-02
+重构BWT算法，将排序方法由冒泡排序更换为归并排序，时间复杂度下降至O(n^2logn)  
 
 ---
 `created by vscode, wrote by markdown(MPE), 2019-02-05, completed in 2019-02-27`
