@@ -64,28 +64,6 @@ namespace
 	}
 }
 
-/* Public Class BWT functions */
-
-/**
- * @brief	The Constructor of class BWT
-**/
-NXZIP::BWT::BWT(uint32_t size)
-{
-	this->length = size; 
-	this->cstr = new uint8_t[size];
-	this->index = 0u;
-}
-
-/**
- * @brief	the Destructor of class BWT 
-**/
-NXZIP::BWT::~BWT(void)
-{
-	this->length = 0u;
-	this->index = 0u;
-	delete[] cstr;
-}
-
 /* Non-Public Class arrayCache Functions */
 
 /**
