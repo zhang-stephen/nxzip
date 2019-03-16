@@ -47,12 +47,12 @@ namespace
  * 				the string will be processed by MTF
  * @param   uint32_t nSize
  *              Length of Source Array
- * @param   uint8_t* rArray
+ * @param   uint32_t* rArray
  *                 result after MTF processing
  * @retval	bool
  * @note	None
  */
-bool NXZIP::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rArray)
+bool NXZIP::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint32_t* rArray)
 {
     // Parameters Check
     if(nullptr == rArray || 0 == nSize || nullptr == nString)
@@ -77,7 +77,7 @@ bool NXZIP::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rAr
 
         // Get the Index in ASCII List
         it = find(__dict.begin(), __dict.end(), *(nString+i));
-        *(rArray+i) = (uint8_t)(it - __dict.begin());
+        *(rArray+i) = (uint32_t)(it - __dict.begin());
 
         // Move the Character to the top of ASCII List
         __dict.erase(it, it+1);
@@ -93,12 +93,12 @@ bool NXZIP::NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rAr
  *              Source Array to process by IMTF
  * @param   uint32_t nSize
  *              Length of Source Array
- * @param	uint8_t* nString
+ * @param	uint32_t* nString
  * 				the result string after processed by MTF, must be vector<uint8_t> or vector<unsigned char>
  * @retval	bool
  * @note	None
  */
-bool NXZIP::NXZ_MoveToFront_Inverse(const uint8_t* nArray, uint32_t nSize, uint8_t* rString)
+bool NXZIP::NXZ_MoveToFront_Inverse(const uint32_t* nArray, uint32_t nSize, uint8_t* rString)
 {
     // Parameters Check
     if(nullptr == nArray || 0 == nSize || nullptr == rString)
