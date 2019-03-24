@@ -10,8 +10,8 @@
 
 namespace NXZIP
 {
-	bool NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint32_t* rArray);
-	bool NXZ_MoveToFront_Inverse(const uint32_t* nArray, uint32_t nSize, uint8_t* rString);
+	bool NXZ_MoveToFront(const uint8_t* nString, uint32_t nSize, uint8_t* rArray);
+	bool NXZ_MoveToFront_Inverse(const uint8_t* nArray, uint32_t nSize, uint8_t* rString);
 }
 
 #endif /*__MOVETOFRONT_H*/
