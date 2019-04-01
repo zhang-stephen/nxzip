@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <cpuid.h>
+#include <x86intrin.h>
+
 #include "crc32.h"
 
 namespace
@@ -79,15 +81,15 @@ namespace
 		0xBE2DA0A5L, 0x4C4623A6L, 0x5F16D052L, 0xAD7D5351L
 	};
 
-	bool nxz_sse42_support(void);
-	uint32_t nxz_crc32_general(uint32_t crc32c, uint8_t* toCal, uint32_t len);
-	uint32_t nxz_crc32_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len);
+	bool isSSE4_2(void);
+	uint32_t crc32c_sw(uint32_t crc32c, uint8_t* toCal, uint32_t len);
+	uint32_t crc32c_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len);
 }
 
 /**
  * @brief	Determin the Processor has SSE4.2 Instruction Set or not(true for supported)
  */
-bool nxz_sse42_support(void)
+bool isSSE4_2(void)
 {
 #ifdef __cpuid
 	unsigned int eax = 0u, ebx = 0u, ecx = 0u, edx = 0u;
@@ -103,9 +105,9 @@ bool nxz_sse42_support(void)
 /**
  * @brief	CRC32 Calaulate(soft method)
  */
-uint32_t nxz_crc32_general(uint32_t crc32c, uint8_t* toCal, uint32_t len)
+uint32_t crc32c_sw(uint32_t crc32c, uint8_t* toCal, uint32_t len)
 {
-	if(len < 1)
+	if(len == 0u)
 	{
 		return 0xFFFFFFFFul;
 	}
@@ -118,17 +120,39 @@ uint32_t nxz_crc32_general(uint32_t crc32c, uint8_t* toCal, uint32_t len)
 
 /**
  * @brief	CRC32 Calculate(SSE4.2 Method)
+ * @note	TODO: use SIMD optimization
  */
-uint32_t nxz_crc32_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len)
+uint32_t crc32c_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len)
 {
-	return 0;
+	if(len == 0u)
+	{
+		return 0xFFFFFFFFul;
+	}
+
+	while(len--)
+	{
+		/* x86_64 built-in instruction */
+		crc32c = __crc32b(crc32c, *(toCal++));
+	}
+
+	return ~crc32c;
 }
 
-// TODO: Add SSE4.2 Method
+/**
+ * @brief	CRC-32c Calculating function
+ * @param	uint32_t crc32c
+ * 				origin crc32c value
+ * @param	uint8_t* src
+ * 				source sequence
+ * @param	uint32_t length
+ * 				length of src
+ * @param	uint32_t
+ * 				crc32 value to return
+ * @note	None
+ */
 uint32_t NXZIP::NXZ_CRC32_Calculate(uint32_t crc32c, uint8_t* src, uint32_t length)
 {
-	// return ((::nxz_sse42_support() ? ::nxz_crc32_sse42(src, length) : ::nxz_crc32_general(src, length)));
-	return ::nxz_crc32_general(crc32c, src, length);
+	return ((::isSSE4_2() ? ::crc32c_sse42(crc32c, src, length) : ::crc32c_sw(crc32c, src, length)));
 }
 
 /* End of File */
