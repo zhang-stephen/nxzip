@@ -12,24 +12,37 @@ project(nxzip)
 set(CMAKE_CXX_STANDARD 17)					# C++ Standard
 set(CMAKE_CXX_STANDARD_REQUIRED 17)			# Require C++17 to Compile(use the filesystem in c++17, not boost::filesystem)
 
+# configuration files
+# configure_file(
+# 	"${PROJECT_SOURCE_DIR}/config.h.in"
+# 	"${PROJECT_BINARY_DIR}/config.h"
+# )
+
 # Include Path
 include_directories(
 	./3rdlib			# the Third-Party Libraries
 	./bwt				# the BWT header and source file
+	./CRC32c			# the crc-32c header and source file
 	./file				# the file IO header and source file
 	./huffman			# the Huffman-Coding header and source file
 	./movetofront		# the MTF header and source file
 	./					# main directory
 )
 
+# Add Compiler Options
+set(CMAKE_CXX_FLAGS "-msse4.2 ${CMAKE_CXX_FLAGS}")
+
 # Source Path
-aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithms
-aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithms
+aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
+aux_source_directory(./file SRC_LIST)			# The File IO Algorithm
+aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithm
+aux_source_directory(./crc32 SRC_LIST)			# The CRC32c Algorithm
 aux_source_directory(./ SRC_LIST)				# The MainCpp Path
 
 # Target Building
 add_executable(nxzip-debug ${SRC_LIST})			# Output Type: Executable Binary
 
 # Link Libs
+target_link_libraries(nxzip-debug stdc++fs)		# filesystem library in c++17
 
 # EOF
