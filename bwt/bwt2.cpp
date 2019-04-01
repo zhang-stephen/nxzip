@@ -27,6 +27,7 @@ namespace
 		int64_t i = 0u;
 		uint32_t tmptimes = 0u;
 
+		/* Search Element via appearance times */
 		while(len --> 0u)
 		{
 			if(seq[i] == elem)
@@ -38,6 +39,7 @@ namespace
 			i++;
 		}
 
+		/* found nothing */
 		if(tmptimes == 0u || tmptimes < times)
 			i = -1;
 
@@ -90,6 +92,34 @@ NXZIP::BWT::~BWT(void)
 	this->length = 0u;
 	this->index = 0u;
 	delete[] cstr;
+}
+
+/**
+ * @brief	get string pointer in c style
+ */
+uint8_t* NXZIP::BWT::c_str(void)
+{
+	return cstr;
+}
+
+/**
+ * @brief	get the index of BWT Sequence
+ */
+uint32_t NXZIP::BWT::getIndex(void)
+{
+	return index;
+}
+
+/**
+ * @brief	re-allocate memory if length changed
+ */
+void NXZIP::BWT::reallocateMem(uint32_t newLength)
+{
+	if(newLength == length) { return ; }
+
+	delete[] cstr;
+	length = newLength;
+	cstr = new uint8_t[newLength];
 }
 
 /**

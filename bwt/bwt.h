@@ -17,6 +17,10 @@ namespace NXZIP
 
 		BWT(uint32_t size);
 		~BWT(void);
+
+		uint8_t* c_str(void);
+		uint32_t getIndex(void);
+		void reallocateMem(uint32_t length);
 	};
 
 	bool NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, BWT* bwt);
