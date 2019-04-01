@@ -83,7 +83,7 @@ namespace
 
 	bool isSSE4_2(void);
 	uint32_t crc32c_sw(uint32_t crc32c, uint8_t* toCal, uint32_t len);
-	uint32_t crc32c_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len);
+	extern "C" uint32_t crc_pcl(uint8_t* buffer, uint32_t buffLen, uint32_t crc_init);
 }
 
 /**
@@ -119,26 +119,6 @@ uint32_t crc32c_sw(uint32_t crc32c, uint8_t* toCal, uint32_t len)
 }
 
 /**
- * @brief	CRC32 Calculate(SSE4.2 Method)
- * @note	TODO: use SIMD optimization
- */
-uint32_t crc32c_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len)
-{
-	if(len == 0u)
-	{
-		return 0xFFFFFFFFul;
-	}
-
-	while(len--)
-	{
-		/* x86_64 built-in instruction */
-		crc32c = __crc32b(crc32c, *(toCal++));
-	}
-
-	return ~crc32c;
-}
-
-/**
  * @brief	CRC-32c Calculating function
  * @param	uint32_t crc32c
  * 				origin crc32c value
@@ -152,7 +132,7 @@ uint32_t crc32c_sse42(uint32_t crc32c, uint8_t* toCal, uint32_t len)
  */
 uint32_t NXZIP::NXZ_CRC32_Calculate(uint32_t crc32c, uint8_t* src, uint32_t length)
 {
-	return ((::isSSE4_2() ? ::crc32c_sse42(crc32c, src, length) : ::crc32c_sw(crc32c, src, length)));
+	return ((::isSSE4_2() ? ~::crc_pcl(src, length, crc32c) : ::crc32c_sw(crc32c, src, length)));
 }
 
 /* End of File */

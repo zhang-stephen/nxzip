@@ -18,6 +18,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED 17)			# Require C++17 to Compile(use the filesys
 # 	"${PROJECT_BINARY_DIR}/config.h"
 # )
 
+add_subdirectory(./crc32)
+
 # Include Path
 include_directories(
 	./3rdlib			# the Third-Party Libraries
@@ -36,7 +38,7 @@ set(CMAKE_CXX_FLAGS "-msse4.2 ${CMAKE_CXX_FLAGS}")
 aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
 aux_source_directory(./file SRC_LIST)			# The File IO Algorithm
 aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithm
-aux_source_directory(./crc32 SRC_LIST)			# The CRC32c Algorithm
+# aux_source_directory(./crc32 SRC_LIST)			# The CRC32c Algorithm
 aux_source_directory(./ SRC_LIST)				# The MainCpp Path
 
 # Target Building
@@ -44,5 +46,6 @@ add_executable(nxzip-debug ${SRC_LIST})			# Output Type: Executable Binary
 
 # Link Libs
 target_link_libraries(nxzip-debug stdc++fs)		# filesystem library in c++17
+target_link_libraries(nxzip-debug crc32)		# crc32c lib with intel asm
 
 # EOF
