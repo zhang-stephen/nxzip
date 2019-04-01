@@ -23,11 +23,12 @@ BWT算法唯一的难点在于内存，随着原数组的增长，原理算法�
 - [x] 实现基本的IBWT算法
 - [x] 使用quick sort替换bubble sort(注：实际使用merge sort)
 - [x] 实现基本的MTF和IMTF算法
-- [ ] 实现`Huffman Coding`算法
+- [x] 实现`Huffman Coding`算法
+- [ ] 实现范式`Huffman Coding`算法
 - [ ] 实现仅利用`STL`的文件读写和其他`file IO`
-- [ ] 定义压缩文件的结构
+- [x] 定义压缩文件的结构
 - [x] 实现软件的CRC-32C校验算法
-- [ ] 实现基于SSE4.2指令集的CRC-32C算法
+- [x] 实现基于SSE4.2指令集的CRC-32C算法
 
 #### 其他
 
