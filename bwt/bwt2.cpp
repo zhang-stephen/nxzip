@@ -186,19 +186,19 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
  * @return 	bool: true means no error occured
  * @note	!!! Length of srcArray must be as same as bwt->length
  */
-bool NXZIP::NXZ_BWTransform_Inverse2(NXZIP::BWT* ibwt, uint32_t length, uint8_t* dstArray)
+bool NXZIP::NXZ_BWTransform_Inverse2(uint8_t* srcArray, uint32_t length, uint32_t index, uint8_t* dstArray)
 {
 	/* param check */
-	if(nullptr == dstArray || nullptr == ibwt || nullptr == ibwt->cstr || 0u == length)
+	if(nullptr == dstArray || nullptr == srcArray || 0u == length)
 	{
 		return false;
 	}
 
 	/* Allocate the memory */
-	uint32_t cursor = ibwt->index;				/* !< the position to take out element in Last Array  */
+	uint32_t cursor = index;
 	uint32_t tmplen = length, tmp = 0u;
 	uint8_t* firstColumn = new uint8_t[length];
-	uint8_t* lastColumn = ibwt->cstr;
+	uint8_t* lastColumn = srcArray;
 
 	/* Construct the first Column */
 	memcpy(firstColumn, lastColumn, length);
