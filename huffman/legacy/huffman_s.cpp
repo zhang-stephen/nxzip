@@ -5,11 +5,9 @@
 
 #include <iostream>
 #include <algorithm>
-#include <cstring>
+#include <vector>
 
 #include "huffman_s.h"
-
-#include <exception>
 
 namespace
 {
@@ -71,6 +69,9 @@ void NXZIP::sHuffman::allocateCodePtr(void) { huffCode = new uint8_t[huffCodeLen
 
 NXZIP::sHuffman::~sHuffman(void) { delete huffCode; }
 
+/**
+ * @brief	Scan the origin Sequence to create origin code table
+ */
 void scanOriginSequence(uint8_t* originSeq, uint32_t seqLen, uint16_t& numLeafNode, uint32_t* huffTable)
 {
 	/* Check */
@@ -100,6 +101,9 @@ void scanOriginSequence(uint8_t* originSeq, uint32_t seqLen, uint16_t& numLeafNo
 	}
 }
 
+/**
+ * @brief	find out two minimum node when creates the tree
+ */
 void selectMinNode(huffNode* hTree, uint16_t nRange, uint16_t& min1, uint16_t& min2)
 {
 	/* check */
@@ -164,6 +168,9 @@ void selectMinNode(huffNode* hTree, uint16_t nRange, uint16_t& min1, uint16_t& m
 	
 }
 
+/**
+ * @brief	create huffman tree(binary tree)
+ */
 void createHuffmanTree(huffNode* hTree, uint16_t numLeafNode, uint32_t* huffTable)
 {
 	/* check */
@@ -207,6 +214,9 @@ void createHuffmanTree(huffNode* hTree, uint16_t numLeafNode, uint32_t* huffTabl
 	}
 }
 
+/**
+ * @brief	get the huffman code of every element in code table
+ */
 void getHuffmanCode(huffNode* hTree, uint16_t numLeafNode, huffCode& cTable)
 {
 	/* check */
@@ -240,10 +250,7 @@ void getHuffmanCode(huffNode* hTree, uint16_t numLeafNode, huffCode& cTable)
 			current = parent; parent = hTree[parent]._hParent; // go to upper node
 		}
 
-		cTable._huffBitsLen[i-1u] = numLeafNode - start - 1u;
-		// cTable._huffBits[i-1u] = new uint8_t[numLeafNode - start - 1u];
-		//FIXME: Faild!!!
-		
+		cTable._huffBitsLen[i-1u] = numLeafNode - start - 1u;		
 		cTable.assginMem(i-1u, numLeafNode-start-1u);
 
 		/* copy the code */
@@ -253,6 +260,9 @@ void getHuffmanCode(huffNode* hTree, uint16_t numLeafNode, huffCode& cTable)
 	delete[] tmp;
 }
 
+/**
+ * @brief	Encode the origin sequence
+ */
 void toEncoding(uint8_t* srcArr, uint32_t srcLength, uint8_t* dstCode, uint32_t codeLength, huffCode* hTable)
 {
 	/* check */
@@ -276,6 +286,9 @@ void toEncoding(uint8_t* srcArr, uint32_t srcLength, uint8_t* dstCode, uint32_t 
 	}
 }
 
+/**
+ * @brief	Decode the huffman sequence
+ */
 void toDecoding(huffNode* hTree, uint8_t* hCode, uint32_t codeLength, uint8_t* huffKeys, uint16_t numLeafNode, uint8_t *dstArr)
 {
 	/* check */
@@ -307,6 +320,17 @@ void toDecoding(huffNode* hTree, uint8_t* hCode, uint32_t codeLength, uint8_t* h
 	}
 }
 
+/**
+ * @brief	Static Huffman Encoding
+ * @parma	uint8_t* srcArr
+ * 				origin Array to encode
+ * @param	uint32_t srcLength
+ * 				Length of origin Array
+ * @param	sHuffman* xhuff
+ * 				Huffman Class to store infomation
+ * @return	bool
+ * @note	None
+ */
 bool NXZIP::NXZ_sHuffmanEncode(uint8_t* srcArr, uint32_t srcLength, sHuffman* xhuff)
 {
 	if(srcArr == nullptr || srcLength == 0u || xhuff == nullptr)
@@ -349,7 +373,10 @@ bool NXZIP::NXZ_sHuffmanEncode(uint8_t* srcArr, uint32_t srcLength, sHuffman* xh
 	return true;
 }
 
-
+/**
+ * @brief	Static Huffman Decoding
+ */
+// TODO: Re-write this function
 bool NXZIP::NXZ_sHuffmanDecode(uint8_t* dstArr, uint32_t dstLength, sHuffman* zhuff)
 {
 	if(dstArr == nullptr || dstLength == 0U || zhuff == nullptr)
@@ -390,6 +417,10 @@ bool NXZIP::NXZ_sHuffmanDecode(uint8_t* dstArr, uint32_t dstLength, sHuffman* zh
 	return true;
 }
 
+/**
+ * @brief	Write the resulting byte stream to the cache bit by bit(no RLE)
+ * @note	will be discarded
+ */
 bool NXZIP::NXZ_Huffman_RuduceByte2Bit(uint8_t* xCode, uint32_t codeLength, uint8_t*& nBuff, uint32_t& buffSize)
 {
 	/* Parameters Check */
@@ -413,6 +444,10 @@ bool NXZIP::NXZ_Huffman_RuduceByte2Bit(uint8_t* xCode, uint32_t codeLength, uint
 	return true;
 }
 
+/**
+ * @brief	Extend the read bit stream to a byte stream(no RLE)
+ * @note	will be discarded
+ */
 bool NXZIP::NXZ_Huffman_ExpandBit2Byte(uint8_t* xBytes, uint32_t byteSize, uint8_t*& codeBuff, uint32_t codeLength)
 {
 	/* parameters check */
@@ -429,6 +464,81 @@ bool NXZIP::NXZ_Huffman_ExpandBit2Byte(uint8_t* xBytes, uint32_t byteSize, uint8
 	{
 		codeBuff[i] = xBytes[i/__CHAR_BIT__] & (1u << i % __CHAR_BIT__) ? '1' : '0';
 	}
+
+	return true;
+}
+
+/**
+ * @brief	write the resulting byte stream to cache by RLE, bit by bit
+ */
+bool NXZIP::NXZ_Huffman_RLE2BitsStream(uint8_t* xCode, uint32_t xLength, utility::vlbuff* eBits)
+{
+	/* parameters check */
+	if(xCode == nullptr || eBits == nullptr ||xLength == 0u)
+	{
+		return false;
+	}
+
+	std::vector<uint8_t> tmp;
+	uint8_t tmpcount = 0u;
+	uint8_t* tmpCode = xCode;
+
+	while(tmpCode - xCode < xLength)
+	{
+		if(*tmpCode == '0') { tmp.push_back(0u); }
+		if(*tmpCode == '1') { tmp.push_back(1u); }
+
+		/* statistic for element */
+		while(*tmpCode == tmp.back() + 48u)
+		{
+			tmpcount++; tmpCode++;
+			if(tmpcount >= 127u) { break; }
+		}
+
+		/* encode */
+		tmp.back() = tmp.back() << 7u | tmpcount;
+		tmpcount = 0u;
+	}
+
+	/* take out the result */
+	eBits->allocate(tmp.size());
+	std::copy(tmp.begin(), tmp.end(), eBits->uptr);
+
+	return true;
+}
+
+/**
+ * @brief	Decode the bitstream written to the file
+ */
+bool NXZIP::NXZ_Huffman_RLD2ByteStream(uint8_t* xBytes, uint32_t xLength, utility::vlbuff* yBits)
+{
+	/* parameters check */
+	if(xBytes == nullptr || xLength == 0u || yBits == nullptr)
+	{
+		return false;
+	}
+
+	std::vector<uint8_t> xtmp;
+	uint8_t* tmpBytes = xBytes;
+	uint8_t tmp = 0u, tmpcount = 0u;
+
+	/* Decode */
+	while(tmpBytes - xBytes < xLength)
+	{
+		tmp = (*tmpBytes & 0x80u >> 7u) + 48u;
+		tmpcount = *tmpBytes & 0x7Fu;
+
+		for(uint8_t i = 0u; i < tmpcount; i++)
+		{
+			xtmp.push_back(tmp);
+		}
+
+		tmpBytes++;
+	}
+
+	/* take out the result */
+	yBits->allocate(xtmp.size());
+	std::copy(xtmp.begin(), xtmp.end(), yBits->uptr);
 
 	return true;
 }
