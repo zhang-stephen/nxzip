@@ -28,6 +28,7 @@ include_directories(
 	./file				# the file IO header and source file
 	./huffman			# the Huffman-Coding header and source file
 	./movetofront		# the MTF header and source file
+	./rlc
 	./					# main directory
 )
 
@@ -38,7 +39,7 @@ set(CMAKE_CXX_FLAGS "-msse4.2 ${CMAKE_CXX_FLAGS}")
 aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
 aux_source_directory(./file SRC_LIST)			# The File IO Algorithm
 aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithm
-# aux_source_directory(./crc32 SRC_LIST)			# The CRC32c Algorithm
+aux_source_directory(./rlc SRC_LIST)			# The RLEC Algorithm
 aux_source_directory(./ SRC_LIST)				# The MainCpp Path
 
 # Target Building
