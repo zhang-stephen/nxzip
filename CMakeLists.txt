@@ -33,7 +33,7 @@ include_directories(
 )
 
 # Add Compiler Options
-set(CMAKE_CXX_FLAGS "-msse4.2 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-msse4.2 -g ${CMAKE_CXX_FLAGS}")
 
 # Source Path
 aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
