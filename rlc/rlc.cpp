@@ -1,193 +1,222 @@
 /**
- * Run-Length Code Algorithm(source file)
- * 2019-03-30
+ * New Run-Length Encoding for output sequence of MTF(Source file)
+ * 2019-04-12
  */
-
-#include <iostream>
-#include <vector>
 
 #include "rlc.h"
+#include <algorithm>
+#include <vector>
 
-namespace
+int8_t isZeroRepeatMoreThan2Times(uint8_t* buff, uint32_t length);
+uint8_t getCountOfZeroRepeats(uint8_t* ptr, uint32_t length);
+uint8_t getCountOfNonZeros(uint8_t* ptr, uint32_t length);
+uint16_t _m_f_power(uint8_t a, uint8_t b);
+int16_t _m_log_b2(uint8_t n);
+
+int8_t isZeroRepeatMoreThan2Times(uint8_t* buff, uint32_t length)
 {
-	bool isRepeatGreaterThan3Times(uint8_t* buff, uint32_t remainLen);
-	uint8_t getNoRepeatBytesCount(uint8_t* buff, uint32_t remainLen);
-	uint8_t getRepeatBytesCount(uint8_t* buff, uint32_t remainLen);
+	/* parameters check */
+	if(buff == nullptr || length == 0u) { return -1; }
+	if(length <= 2u) { return 1u; }
+
+	/* check elements */
+	if(*buff == 0u && *buff == *(buff+1u) && *buff == *(buff+2u)) { return 0u; }
+	else { return 1u; }
 }
 
-bool isRepeatGreaterThan3Times(uint8_t* buff, uint32_t remainLen)
+uint8_t getCountOfZeroRepeats(uint8_t* ptr, uint32_t length)
 {
-	if(remainLen < 2u) { return false; }
+	uint8_t c = 0u;
+	uint8_t* tmpptr = ptr;
+
+	if(length < 2u) { return length + 1u; }
 	else
 	{
-		if(*buff == *(buff+1u) && *buff == *(buff+2u)) { return true; }
-		else { return false; }
-	}
-}
-
-uint8_t getNoRepeatBytesCount(uint8_t* buff, uint32_t remainLen)
-{
-	uint32_t c = 0u, remainc = remainLen, tmp = 0u;
-	uint8_t* tmpptr = buff;
-
-	if(remainLen < 2u) { return remainLen + 1u; }
-	else
-	{
-		while(::isRepeatGreaterThan3Times(tmpptr, remainc) == false)
+		while(*tmpptr == 0u && *tmpptr == *(tmpptr+1u))
 		{
-			tmpptr++; remainc--; c++;
+			tmpptr++, c++; length--;
 
-			if(c >= 128u)
-			{
-				tmp = c; break;
-			}
-
-			if(remainc == 0u)
-			{
-				tmp = c + 1u; break;
-			}
+			if(length == 0u) { return c + 1u; }
+			if(c == 0xFFu) { return c; }
 		}
 
-		tmp = c;
+		return c + 1u;
 	}
-
-	return tmp;
 }
 
-uint8_t getRepeatBytesCount(uint8_t* buff, uint32_t remainLen)
+uint8_t getCountOfNonZeros(uint8_t* ptr, uint32_t length)
 {
-	uint32_t c = 0u, remainc = remainLen, tmp = 0u;
-	uint8_t* tmpptr = buff;
+	uint8_t c = 0u;
+	uint8_t* tmpptr = ptr;
 
-	if(remainLen < 2u) { return remainLen + 1u; }
+	if(length <= 2u) { return length; }
 	else
 	{
-		// while(::isRepeatGreaterThan3Times(tmpptr, remainc))
-		while(*(tmpptr) == *(tmpptr+1u))
+		while(*tmpptr != 0u || !(*tmpptr == 0u && *(tmpptr+1u) == 0u && *(tmpptr+2u) == 0u))
 		{
-			tmpptr++; remainc--; c++;
-
-			if(c >= 128u)
-			{
-				tmp = c; break;
-			}
-
-			if(remainc == 0u)
-			{
-				tmp = c + 1u; break;
-			}
+			tmpptr++; c++; length--;
+			if(length == 0u) { return c + 1u; }
+			if(c == 0x7Fu) { return c; }
 		}
 
-		tmp = c + 1u;
+		return c;
 	}
-
-	return tmp;
 }
 
 /**
- * @brief	Run-Length Encoding
- * @param	uint8_t* srcBuff
- * 				prime sequence to encode
+ * @brief Calculate the result of a^b
+ */
+uint16_t _m_f_power(uint8_t a, uint8_t b)
+{
+	if(a == 0u) { return 0u; }
+	if(b == 0u && a != 0u) { return 1u; }
+
+	int16_t res = 1u, base = a;
+	while(b != 0u)
+	{
+		if(b % 2u != 0u) { res *= base; }
+		base *= base;
+		b /= 2u;
+	}
+
+	return res;
+}
+
+/**
+ * @brief	Fast method to calculate [log(2, n+1)](get integer)
+ */
+int16_t _m_log_b2(uint8_t n)
+{
+	uint8_t tmpl = 0u;
+
+	if(n == 0u) 
+	{ 
+		return -1;
+	}
+	else
+	{
+		while(true)
+		{
+			if((n+1u) / _m_f_power(2u, tmpl) != 0u)
+			{
+				if((n+1u) / _m_f_power(2u, tmpl+1u) == 0u) { break; }
+				else { tmpl++; }
+			}
+		}
+	}
+
+	return tmpl;
+}
+
+/**
+ * @brief	Run-Length Encoding for MTF Sequence
+ * @param	uint8_t* src
+ * 				source sequence to encode
  * @param	uint32_t srcLength
- * 				length of prime sequence
- * @param	utility::vlbuff* oBuff
- * 				output buffer
- * @return	bool
+ * 				length of source sequence
+ * @param	utility::vlbuff* rlcbuff
+ * 				rlc buffer(return, in namespace NXZIP)
+ * @return	true if no error occured
  * @note	None
  */
-bool NXZIP::NXZ_RunLengthEncode(uint8_t* srcBuff, uint32_t srcLength, utility::vlbuff* oBuff)
+bool NXZIP::NXZ_mRunLength_Encoding(uint8_t* src, uint32_t srcLength, utility::VLBUFF* rlcbuff)
 {
-	/* Parameters Check */
-	if(srcBuff == nullptr || srcLength == 0u)
+	/* parameters check */
+	if(src == nullptr || srcLength == 0u || rlcbuff == nullptr)
 	{
 		return false;
 	}
 
-	uint8_t* tmpsrc = srcBuff;
-	uint32_t remain = srcLength;
-	uint8_t count = 0u;
-	std::vector<uint8_t> tmpRLC(0u, 0u);
+	/* create Temporary Data */
+	std::vector<uint8_t> tmpvec;
+	uint8_t* tmpsrc = src;
+	uint8_t es_c1 = 0u, es_c2 = 0u, count = 0u;
 
 	/* Encoding */
-	while(remain > 0u)
+	while(srcLength > 0u)
 	{
-		/* repeat data occured */
-		if(::isRepeatGreaterThan3Times(tmpsrc, remain))
+		/* replace contionus zero sequence by two escape characters */
+		if(isZeroRepeatMoreThan2Times(tmpsrc, srcLength) == 0u)
 		{
-			count = ::getRepeatBytesCount(tmpsrc, remain);
-			tmpRLC.push_back(count | 0x80u);
-			tmpRLC.push_back(*tmpsrc);
-			tmpsrc += count;
-			remain -= count;
+			count = getCountOfZeroRepeats(tmpsrc, srcLength);
+			es_c1 = 0x80u | _m_log_b2(count);
+			es_c2 = count + 1u - _m_f_power(2u, es_c1 & 0x7Fu);
+			tmpvec.push_back(es_c1);
+			tmpvec.push_back(es_c2);
+			es_c1 = 0u; es_c2 = 0u;
+			tmpsrc += count; srcLength -= count;
 		}
-		/* no repeat data */
+		/* replace other sequence by one escape character */
+		else if(isZeroRepeatMoreThan2Times(tmpsrc, srcLength) == 1u)
+		{
+			count = getCountOfNonZeros(tmpsrc, srcLength) & 0x7Fu;
+			tmpvec.push_back(count);
+
+			for(uint8_t i = 0; i < count; i++)
+			{
+				tmpvec.push_back(*tmpsrc++);
+			}
+
+			srcLength -= count;
+		}
 		else
 		{
-			count = ::getNoRepeatBytesCount(tmpsrc, remain);
-			tmpRLC.push_back(count);
-
-			for(uint8_t i = 0u; i < count; i++)
-			{
-				tmpRLC.push_back(*tmpsrc++);
-			}
-			remain -= count;
+			return false;
 		}
 	}
 
-	/* copy data */
-	oBuff->allocate(tmpRLC.size());
-	std::copy(tmpRLC.begin(), tmpRLC.end(), oBuff->uptr);
+	/* take out data */
+	rlcbuff->allocate(tmpvec.size());
+	std::copy(tmpvec.begin(), tmpvec.end(), rlcbuff->uptr);
 
 	return true;
 }
 
-/**
- * @brief	Run-Length Decoding
- */
-bool NXZIP::NXZ_RunLengthDecode(uint8_t* rlcBuff, uint32_t rlcLength, utility::vlbuff* yBuff)
+bool NXZIP::NXZ_mRunLength_Decoding(uint8_t* rlc, uint32_t rlcLength, utility::VLBUFF* oribuff)
 {
-	/* Parameters Check */
-	if(rlcBuff == nullptr || rlcLength == 0u)
+	/* parameters check */
+	if(rlc == nullptr || rlcLength == 0u || oribuff == nullptr)
 	{
 		return false;
 	}
 
-	uint8_t* tmpbuff = rlcBuff;
-	uint32_t remain = 0u;
-	uint8_t count = rlcLength, sign = 0u; //sign is repeat count with flag bit
-	std::vector<uint8_t> tmpDst(0u, 0u);
+	/* create temporary variables */
+	std::vector<uint8_t> tmpvec;
+	uint8_t mcount = 0u, tmp = 0u;
+	uint8_t* tmprlc = rlc;
+	bool _r_flag = false;
 
-	/* Decode */
-	while(tmpbuff < (rlcBuff + rlcLength))
+	/* decoding */
+	while(tmprlc - rlc < rlcLength)
 	{
-		sign = *tmpbuff++;
-		count = sign & 0x7Fu;
+		/* read 1st escape character */
+		if((*tmprlc & 0x80u) != 0u)	// zero sequence
+		{
+			/* read 2nd escape character */
+			mcount = _m_f_power(2u, *tmprlc & 0x0Fu) + *(tmprlc+1u) - 1u;
+			tmprlc += 2u;
 
-		/* repeat data */
-		if((sign & 0x80u) == 0x80u)
-		{
-			for(uint8_t i = 0u; i < count; i++)
+			for(uint8_t i = 0u; i < mcount; i++)
 			{
-				tmpDst.push_back(*tmpbuff);
-			}
-			tmpbuff++;
-		}
-		/* no repeat data */
-		else
-		{
-			for(uint8_t i = 0; i < count; i++)
-			{
-				tmpDst.push_back(*tmpbuff++);
+				tmpvec.push_back(0u);
 			}
 		}
-		
+		else 						// non-zero sequnce
+		{
+			mcount = *tmprlc & 0x7Fu; tmprlc++;
+
+			for(uint8_t i = 0; i < mcount; i++)
+			{
+				tmpvec.push_back(*tmprlc++);
+			}
+		}
 	}
 
-	/* copy data */
-	yBuff->allocate(tmpDst.size());
-	std::copy(tmpDst.begin(), tmpDst.end(), yBuff->uptr);
+	/* take out the result */
+	oribuff->allocate(tmpvec.size());
+	std::copy(tmpvec.begin(), tmpvec.end(), oribuff->uptr);
 
 	return true;
 }
 
-/* End of File */
+/* End of file */
