@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <vector>
 #include <cstring>
 #include "bwt.h"
 
@@ -106,10 +107,10 @@ NXZIP::BWT::~BWT(void)
 /**
  * @brief	Compare Policy for std::sort
  */
-int cmp(struct suffix a, struct suffix b) 
+bool cmp(struct suffix& a, struct suffix& b) 
 { 
-	return (a.rank[0] == b.rank[0])? (a.rank[1] < b.rank[1] ?1: 0): 
-			(a.rank[0] < b.rank[0] ?1: 0); 
+	return (a.rank[0] == b.rank[0]) ? (a.rank[1] < b.rank[1] ? true : false): 
+			(a.rank[0] < b.rank[0] ? true : false); 
 } 
 
 /**
@@ -136,7 +137,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 
 	/* create temporary variables */
 	// A structure to store suffixes and their indexes 
-	::suffix* suffixes = new ::suffix[length];
+	std::vector<::suffix> suffixes(length);
 
 	// A Temporary Variable
 	uint32_t tmp = 0u;
@@ -153,12 +154,13 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 
 	// Sort the suffixes using the comparison function 
 	// defined above. 
-	std::sort(suffixes, suffixes+length, cmp); 
+	// std::sort(suffixes, suffixes+length, cmp); 
+	std::sort(suffixes.begin(), suffixes.end(), cmp);
 
 	// At this point, all suffixes are sorted according to first 
 	// 2 characters. Let us sort suffixes according to first 4 
 	// characters, then first 8 and so on 
-	int32_t ind[length]; // This array is needed to get the index in suffixes[] 
+	std::vector<int32_t> ind(length); // This array is needed to get the index in suffixes[] 
 				// from original index. This mapping is needed to get 
 				// next suffix. 
 	for (int32_t k = 4; k < 2u * length; k *= 2u) 
@@ -197,7 +199,8 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 		} 
 
 		// Sort the suffixes according to first k characters 
-		std::sort(suffixes, suffixes+length, cmp); 
+		// std::sort(suffixes, suffixes+length, cmp); 
+		std::sort(suffixes.begin(), suffixes.end(), cmp);
 	}
 
 	// take out the result
@@ -209,7 +212,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 		if(tmp == 0u) { bwt->index = i - 1u; }
 	}
 
-	delete[] suffixes;
+	// delete[] suffixes;
 
 	return true;
 }
