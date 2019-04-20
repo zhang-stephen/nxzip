@@ -5,4 +5,4 @@
 *.p
 *.exe
 main.cpp
-*.xzp # NXZIP compressed filetype
+/data
