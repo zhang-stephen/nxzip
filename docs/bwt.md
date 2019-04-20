@@ -63,63 +63,19 @@ typedef struct
 
 通过以上三条性质，就可以逆序写出原序列了，当然在编程实现的时候，可以一次写出正确的原序列
 
-~~经过验证，BWT解码算法的时间复杂度应该是O(n^2)，空间复杂度为3n，符合bzip2的“压缩占用内存是解压的三到七倍”的说法~~
+#### Freeze(2019-04-21)
+之前的方法相当于分拆实现了构建后缀树（Suffix Tree）的算法，复杂且不便于调试
+现在使用新的算法，直接构建后缀数组（Suffix Array, SA），SA的每个元素减去1即为BWT序列中每个元素在原序列中的索引，例如，对于序列`banana`：
+```
+suffix array = {5, 3, 1, 0, 4, 2}
+BWT array = {4, 2, 0, 5, 3, 1} --> {n, n. b, a, a, a}, index = 2
+```
+显然上述关系是成立的，如果SA中的元素为0，则对应的索引为`n-1`，而BWT的索引值（用于解码）显然是SA中零元素的索引减一
 
-#### 程序中的特殊实现
-1. 匿名空间  
-
-	实现代码如下例
-
-	```c++
-	/* Non-public Namespace */
-	/* source file: bwt.cpp */
-	namespace 
-	{
-		/* Logic Suffix Array Definition */
-		typedef struct 
-		{
-			int16_t* nnstr;			/* !< the cache pointer */
-			uint32_t position;		/* !< the position in origin Array */
-			uint32_t length;		/* !< the length of nnstr */
-		}SuffixArray_TypeDef;
-	}
-	```
-	这里使用了c++中一种特殊的语法：匿名空间（anonymous namespace），它的用法相当于C语言中的`static`关键字，但是更强大
-
-	`static`关键字的作用：
-	- 修饰变量，使得变量作为静态变量，且对其他编译单元不可见
-	- 修饰函数，使得函数对其他编译单元不可见，只能在本单元内访问
-
-	而匿名空间的作用除了以上所说，它甚至还支持对类型的隐藏，使之对其他的编译单元不可见，如上代码中，便隐藏了`SuffixArray_TypeDef`类型，而访问这个类型时，有两种写法（以定义某个数据变量为例）
-
-	```c++
-	// SuffixArray 1
-	::SuffixArray_TypeDef suf{nullptr, 0, 0};
-
-	// SuffixArray 2
-	SuffixArray_TypeDef suf{nullptr, 0, 0};
-	```
-
-	匿名空间的使用需要注意：
-	+ 不宜在匿名空间中建立过于复杂的函数，只适宜于简单的helper函数
-	+ 某些命令行式调试工具可能无法命中匿名空间中的断点
-	+ 不要和`static`混用，否则可能会有无法预料的问题，甚至不建议在c++中使用该关键字
-
-2. 模板元编程（Template Meta-Programming）
-
-	接下来的所有实现均在`pbwt.h`，该头文件只允许被`bwt2.cpp`包含，重新定义了`class suffixArray`并实现了归并排序
-
-	考虑到归并排序可能有其他的用处，因此使用模板实现，函数的原型如下
-
-	```c++
-	template <typename T>
-	void __pbwt_merge_sort(T *arr, uint32_t left, uint32_t right);
-	```
-
-	其中`T`为该函数可以接受的类型，在函数实例化的时候由编译器确定，如果函数接受的不是基本类型，则需要重载操作符`=`和`>`，否则该函数无法执行
-
-3. 操作符重载（Operator Reload）
-	--to be continued...
+#### Reference
+1. video: [how to create a suffix array](https://www.youtube.com/watch?v=m2-N853rS6U)
+2. paper: [Suffix Array in Stanford Universuty](https://web.stanford.edu/class/cs97si/suffix-array.pdf)
+3. book: Introduction to Data Compression, 3rd Edition, Elsevier
 
 #### Update
 + 2019-02-05
@@ -130,7 +86,9 @@ typedef struct
 + 2019-02-27
 实现基于next值的Inverse-BWT算法  
 + 2019-03-02
-重构BWT算法，将排序方法由冒泡排序更换为归并排序，时间复杂度下降至O(n^2logn)  
+重构BWT算法，将排序方法由冒泡排序更换为归并排序，时间复杂度下降至O(n^2logn)
++ 2019-04-21
+重构BWT算法，整体方法更换为构建后缀数组，时间复杂度下降至O(nlogn)
 
 ---
 `created by vscode, wrote by markdown(MPE), 2019-02-05, completed in 2019-02-27`
