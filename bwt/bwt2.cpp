@@ -7,11 +7,20 @@
 #include <algorithm>
 #include <cstring>
 #include "bwt.h"
-#include "pbwt.h"
 
 /* Anoymous Namespace */
 namespace
 {
+	/* Auxiliary Structure to construct Suffix Array */
+	struct suffix
+	{
+		uint32_t index;
+		int32_t rank[2];
+
+		/* default constructor */
+		suffix() { index = 0u; rank[0] = 0u; rank[1] = 0u; }
+	};
+	
 	/**
 	 * @brief get the index of specific element
 	 */
@@ -79,9 +88,9 @@ namespace
 **/
 NXZIP::BWT::BWT(uint32_t size)
 {
-	this->length = size; 
-	this->cstr = new uint8_t[size];
-	this->index = 0u;
+	length = size; 
+	cstr = new uint8_t[size];
+	index = 0u;
 }
 
 /**
@@ -89,38 +98,19 @@ NXZIP::BWT::BWT(uint32_t size)
 **/
 NXZIP::BWT::~BWT(void)
 {
-	this->length = 0u;
-	this->index = 0u;
+	length = 0u;
+	index = 0u;
 	delete[] cstr;
 }
 
 /**
- * @brief	get string pointer in c style
+ * @brief	Compare Policy for std::sort
  */
-uint8_t* NXZIP::BWT::c_str(void)
-{
-	return cstr;
-}
-
-/**
- * @brief	get the index of BWT Sequence
- */
-uint32_t NXZIP::BWT::getIndex(void)
-{
-	return index;
-}
-
-/**
- * @brief	re-allocate memory if length changed
- */
-void NXZIP::BWT::reallocateMem(uint32_t newLength)
-{
-	if(newLength == length) { return ; }
-
-	delete[] cstr;
-	length = newLength;
-	cstr = new uint8_t[newLength];
-}
+int cmp(struct suffix a, struct suffix b) 
+{ 
+	return (a.rank[0] == b.rank[0])? (a.rank[1] < b.rank[1] ?1: 0): 
+			(a.rank[0] < b.rank[0] ?1: 0); 
+} 
 
 /**
  * @brief	The Burrows-Wheeler Transform 2 
@@ -138,42 +128,88 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 		return false;
 	}
 
-	using namespace private_bwt;
-
-	/* Allocate the Memory */
-	suffixArray* suf = new suffixArray[bwt->length];
-	suffixArray* TMP = new suffixArray{nullptr, 0u, 0u, false};
-	uint32_t tmplen = 0;
-
-	/* Init the logic suffix array */
-	for(uint32_t i = 0; i < bwt->length; i++)
+	/* source array length must in [1ul, 0x7ffffffful] */
+	if(length > 0x7FFFFFFFul || length == 0u)
 	{
-		suf[i].nnstr = srcArray + i;
-		suf[i].position = i;
-		suf[i].length = bwt->length - i;
-		suf[i].isCompleteSeq = (suf[i].position == 0);
+		return false;
 	}
 
-	/* Logic Suffix Array Sort: Merge Sort */
-	/* Time Complexity: O(n^2logn) */
-	/* Space Complexity: T(n) */
-	/* TODO: optimization --> Tim Sort */
-	__pbwt_merge_sort(suf, 0, bwt->length);
+	/* create temporary variables */
+	// A structure to store suffixes and their indexes 
+	::suffix* suffixes = new ::suffix[length];
 
-	/* take out the result after BWT */
-	for(uint32_t i = 0u; i < bwt->length; i++)
-	{
-		bwt->cstr[i] = (suf[i].position == 0u) ? srcArray[bwt->length-1u] : suf[i].nnstr[-1];
+	// A Temporary Variable
+	uint32_t tmp = 0u;
 
-		if(suf[i].isCompleteSeq == true)
-		{
-			bwt->index = i;
-		}
+	// Store suffixes and their indexes in an array of structures. 
+	// The structure is needed to sort the suffixes alphabatically 
+	// and maintain their old indexes while sorting 
+	for(int i = 0; i < length; i++) 
+	{ 
+		suffixes[i].index = i; 
+		suffixes[i].rank[0] = srcArray[i];
+		suffixes[i].rank[1] = ((i+1) < length) ? srcArray[i + 1u] : -1; 
 	}
 
-	/* Free the Memory */
-	delete[] suf;
-	delete TMP;
+	// Sort the suffixes using the comparison function 
+	// defined above. 
+	std::sort(suffixes, suffixes+length, cmp); 
+
+	// At this point, all suffixes are sorted according to first 
+	// 2 characters. Let us sort suffixes according to first 4 
+	// characters, then first 8 and so on 
+	int32_t ind[length]; // This array is needed to get the index in suffixes[] 
+				// from original index. This mapping is needed to get 
+				// next suffix. 
+	for (int32_t k = 4; k < 2u * length; k *= 2u) 
+	{ 
+		// Assigning rank and index values to first suffix 
+		int32_t rank = 0; 
+		int32_t prev_rank = suffixes[0].rank[0]; 
+		suffixes[0].rank[0] = rank; 
+		ind[suffixes[0].index] = 0; 
+
+		// Assigning rank to suffixes 
+		for (int32_t i = 1; i < length; i++) 
+		{ 
+			// If first rank and next ranks are same as that of previous 
+			// suffix in array, assign the same new rank to this suffix 
+			if (suffixes[i].rank[0] == prev_rank && 
+					suffixes[i].rank[1] == suffixes[i-1].rank[1]) 
+			{ 
+				prev_rank = suffixes[i].rank[0]; 
+				suffixes[i].rank[0] = rank; 
+			} 
+			else // Otherwise increment rank and assign 
+			{ 
+				prev_rank = suffixes[i].rank[0]; 
+				suffixes[i].rank[0] = ++rank; 
+			} 
+			ind[suffixes[i].index] = i; 
+		} 
+
+		// Assign next rank to every suffix 
+		for (int32_t i = 0; i < length; i++) 
+		{ 
+			int32_t nextindex = suffixes[i].index + k/2; 
+			suffixes[i].rank[1] = (nextindex < length)? 
+								suffixes[ind[nextindex]].rank[0] : -1; 
+		} 
+
+		// Sort the suffixes according to first k characters 
+		std::sort(suffixes, suffixes+length, cmp); 
+	}
+
+	// take out the result
+	for(int32_t i = 0u; i < length; i++)
+	{
+		tmp = suffixes[i].index;
+		bwt->cstr[i] = (tmp != 0u) ? srcArray[tmp-1u] : srcArray[length-1u];
+
+		if(tmp == 0u) { bwt->index = i - 1u; }
+	}
+
+	delete[] suffixes;
 
 	return true;
 }
@@ -201,7 +237,7 @@ bool NXZIP::NXZ_BWTransform_Inverse2(uint8_t* srcArray, uint32_t length, uint32_
 	uint8_t* lastColumn = srcArray;
 
 	/* Construct the first Column */
-	memcpy(firstColumn, lastColumn, length);
+	std::memcpy(firstColumn, lastColumn, length);
 	std::sort(firstColumn, firstColumn+length);
 
 	while(tmplen --> 0u)
