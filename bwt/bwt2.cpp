@@ -154,7 +154,6 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 
 	// Sort the suffixes using the comparison function 
 	// defined above. 
-	// std::sort(suffixes, suffixes+length, cmp); 
 	std::sort(suffixes.begin(), suffixes.end(), cmp);
 
 	// At this point, all suffixes are sorted according to first 
@@ -199,7 +198,6 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 		} 
 
 		// Sort the suffixes according to first k characters 
-		// std::sort(suffixes, suffixes+length, cmp); 
 		std::sort(suffixes.begin(), suffixes.end(), cmp);
 	}
 
@@ -211,8 +209,6 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 
 		if(tmp == 0u) { bwt->index = i - 1u; }
 	}
-
-	// delete[] suffixes;
 
 	return true;
 }
