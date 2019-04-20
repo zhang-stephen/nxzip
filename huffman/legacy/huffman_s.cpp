@@ -431,15 +431,15 @@ bool NXZIP::NXZ_Huffman_RuduceByte2Bit(uint8_t* xCode, uint32_t codeLength, util
 	uint32_t tmp = 0u;
 
 	/* calculate the buffer size */
-	tmp = codeLength / __CHAR_BIT__ + codeLength % __CHAR_BIT__;
+	tmp = codeLength / __CHAR_BIT__ + (codeLength % __CHAR_BIT__ == 0u ? 0u : 1u);
 
 	/* allocate memeory */
 	nBuff->allocate(tmp);
 
 	/* write into buffer */
-	for(uint32_t i = 0u; i < tmp; i++)
+	for(uint32_t i = 0u; i < codeLength; i++)
 	{
-		nBuff->uptr[i/__CHAR_BIT__] |= (xCode[i] == '0' ? 0u : 1u) << i % __CHAR_BIT__;
+		nBuff->uptr[i/__CHAR_BIT__] |= (xCode[i] == '0' ? 0u : 1u) << (i % __CHAR_BIT__);
 	}
 
 	return true;

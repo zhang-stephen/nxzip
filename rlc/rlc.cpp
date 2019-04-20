@@ -131,14 +131,16 @@ bool NXZIP::NXZ_mRunLength_Encoding(uint8_t* src, uint32_t srcLength, utility::V
 	std::vector<uint8_t> tmpvec;
 	uint8_t* tmpsrc = src;
 	uint8_t es_c1 = 0u, es_c2 = 0u, count = 0u;
+	uint32_t tmplen = srcLength;
 
 	/* Encoding */
-	while(srcLength > 0u)
+	while(tmpsrc - src < tmplen)
 	{
 		/* replace contionus zero sequence by two escape characters */
 		if(isZeroRepeatMoreThan2Times(tmpsrc, srcLength) == 0u)
 		{
 			count = getCountOfZeroRepeats(tmpsrc, srcLength);
+			// count = count > srcLength ? srcLength : count;
 			es_c1 = 0x80u | _m_log_b2(count);
 			es_c2 = count + 1u - _m_f_power(2u, es_c1 & 0x7Fu);
 			tmpvec.push_back(es_c1);
@@ -150,6 +152,7 @@ bool NXZIP::NXZ_mRunLength_Encoding(uint8_t* src, uint32_t srcLength, utility::V
 		else if(isZeroRepeatMoreThan2Times(tmpsrc, srcLength) == 1u)
 		{
 			count = getCountOfNonZeros(tmpsrc, srcLength) & 0x7Fu;
+			// count = count > srcLength ? srcLength : count;
 			tmpvec.push_back(count);
 
 			for(uint8_t i = 0; i < count; i++)

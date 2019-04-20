@@ -28,7 +28,7 @@ namespace NXZIP
 
 	/* BitStream Operations, without RLE */
 	bool NXZ_Huffman_RuduceByte2Bit(uint8_t* xCode, uint32_t codeLength, utility::VLBUFF* nBuff);
-	bool NXZ_Huffman_ExpandBit2Byte(uint8_t* xBytes, uint32_t byteSize, utility::VLBUFF* cBuff);
+	bool NXZ_Huffman_ExpandBit2Byte(uint8_t* xBytes, uint32_t byteSize, uint32_t cSize, utility::VLBUFF* cBuff);
 }
 
 #endif /*__HUFFMAN_S_H*/
