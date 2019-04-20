@@ -26,7 +26,7 @@ include_directories(
 	./bwt				# the BWT header and source file
 	./CRC32c			# the crc-32c header and source file
 	./file				# the file IO header and source file
-	./huffman			# the Huffman-Coding header and source file
+	./huffman/legacy	# the Huffman-Coding header and source file
 	./movetofront		# the MTF header and source file
 	./rlc
 	./					# main directory
@@ -34,12 +34,16 @@ include_directories(
 
 # Add Compiler Options
 set(CMAKE_CXX_FLAGS "-msse4.2 -g ${CMAKE_CXX_FLAGS}")
+if(WIN32)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,4096")
+endif()
 
 # Source Path
 aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
 aux_source_directory(./file SRC_LIST)			# The File IO Algorithm
 aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithm
 aux_source_directory(./rlc SRC_LIST)			# The RLEC Algorithm
+aux_source_directory(./huffman/legacy SRC_LIST) # The Huffman Algorithm
 aux_source_directory(./ SRC_LIST)				# The MainCpp Path
 
 # Target Building
