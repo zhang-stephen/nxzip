@@ -7,38 +7,56 @@
 #define __NXZIP_UTILITY_H
 
 #include <iostream>
+#include <cstring>
+#include <cstdio>
 
 namespace NXZIP::utility
 {
 	/* variable length buffer class for RLE/Huffman */
-	class vlbuff
+	class VLBUFF
 	{
 	public:
+		/* variable length buffer class for RLE/Huffman */
 		uint8_t* uptr;
 		uint32_t ulength;
+		uint32_t posbuff;
 
-		vlbuff(uint32_t n)
+		VLBUFF(uint32_t n)
 		{
-			ulength = n; uptr = new uint8_t[ulength]{0u};
+			ulength = n; uptr = new uint8_t[ulength]{0u}; posbuff = 0u;
+		}
+
+		VLBUFF()
+		{
+			uptr = nullptr; ulength = 0u; posbuff = 0u;
 		}
 		
-		~vlbuff(void)
+		~VLBUFF(void)
 		{
-			delete[] uptr; ulength = 0u;
+			delete[] uptr; ulength = 0u; posbuff = 0u;
 		}
 
 		void allocate(uint32_t n)
 		{
 			if(n == ulength) { return; }
 			if(uptr != nullptr) { delete[] uptr; }
-			ulength = n; uptr = new uint8_t[ulength]{0u};
-		}
 
-		void flush(void)
-		{
-			delete[] uptr;
-			uptr = new uint8_t[ulength]{0u};
+			ulength = n; uptr = new uint8_t[ulength]{0u}; posbuff = 0u;
 		}
+		void vlcopy(void* begin, uint32_t n)
+		{
+			std::memcpy((void*)(uptr+posbuff), begin, n);
+			posbuff += n;
+		}
+	};
+
+	/* Command-line options Structure */
+	struct CLIOPS
+	{
+		bool isLogging;
+		bool isRemoveFile;
+
+		uint8_t encoding;
 	};
 }
 
