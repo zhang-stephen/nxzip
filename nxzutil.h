@@ -19,7 +19,6 @@ namespace NXZIP::utility
 		/* variable length buffer class for RLE/Huffman */
 		uint8_t* uptr;
 		uint32_t ulength;
-		uint32_t posbuff;
 
 		VLBUFF(uint32_t n)
 		{
@@ -48,6 +47,9 @@ namespace NXZIP::utility
 			std::memcpy((void*)(uptr+posbuff), begin, n);
 			posbuff += n;
 		}
+
+	private:
+		uint32_t posbuff;
 	};
 
 	/* Command-line options Structure */

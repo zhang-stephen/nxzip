@@ -34,9 +34,6 @@ include_directories(
 
 # Add Compiler Options
 set(CMAKE_CXX_FLAGS "-msse4.2 -g ${CMAKE_CXX_FLAGS}")
-if(WIN32)
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,4096")
-endif()
 
 # Source Path
 aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
