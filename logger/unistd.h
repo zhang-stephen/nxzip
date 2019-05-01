@@ -11,6 +11,8 @@
 #elif WINNT || WIN32 || WIN64
 	#include <io.h>
 	#include <process.h>
+#else 
+	#error Unknowm Platform
 #endif /* PLATFORM DEFINITIONS */
 
 #endif /*__INSTEAD_UNISTD_H*/
