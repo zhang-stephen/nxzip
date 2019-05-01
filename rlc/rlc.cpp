@@ -37,7 +37,7 @@ uint16_t getCountOfZeroRepeats(uint8_t* ptr, uint32_t length)
 			tmpptr++, c++; length--;
 
 			if(length == 0u) { return c + 1u; }
-			if(c == 0xFFFFu) { return c; }			// max count: 4095ul
+			if(c == 0x0FFFu) { return c; }			// max count: 4095ul
 		}
 
 		return c + 1u;
@@ -130,8 +130,8 @@ bool NXZIP::NXZ_mRunLength_Encoding(uint8_t* src, uint32_t srcLength, utility::V
 	/* create Temporary Data */
 	std::vector<uint8_t> tmpvec;
 	uint8_t* tmpsrc = src;
-	uint8_t es_c1 = 0u, count = 0u;		// es_cx: Escape Character x(x = 1, 2)
-	uint16_t es_c2 = 0u;				// temporary of es_c2
+	uint8_t es_c1 = 0u;		// es_cx: Escape Character x(x = 1, 2)
+	uint16_t es_c2 = 0u, count = 0u;				// temporary of es_c2
 	uint32_t tmplen = srcLength;
 
 	/* Encoding */
