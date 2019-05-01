@@ -12,11 +12,13 @@ project(nxzip)
 set(CMAKE_CXX_STANDARD 17)					# C++ Standard
 set(CMAKE_CXX_STANDARD_REQUIRED 17)			# Require C++17 to Compile(use the filesystem in c++17, not boost::filesystem)
 
+option(NXZ_DEBUG "" ON)
+
 # configuration files
-# configure_file(
-# 	"${PROJECT_SOURCE_DIR}/config.h.in"
-# 	"${PROJECT_BINARY_DIR}/config.h"
-# )
+configure_file(
+	"${PROJECT_SOURCE_DIR}/config.h.in"
+	"${PROJECT_SOURCE_DIR}/config.h"
+)
 
 add_subdirectory(./crc32)
 
@@ -27,8 +29,9 @@ include_directories(
 	./CRC32c			# the crc-32c header and source file
 	./file				# the file IO header and source file
 	./huffman/legacy	# the Huffman-Coding header and source file
+	./logger			# the logger module
 	./movetofront		# the MTF header and source file
-	./rlc
+	./rlc 				# the RLE header and source file
 	./					# main directory
 )
 
