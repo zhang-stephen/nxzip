@@ -7,7 +7,8 @@
 #ifndef __FILEDEF_H
 #define __FILEDEF_H
 
-#include <cstdint>
+#include <string>
+#include "../crc32/crc32.h"
 
 #ifndef __sizeof_kilobytes 
 	#define __sizeof_kilobytes 1024u		// 1KiB = 1024Bytes
@@ -15,8 +16,9 @@
 
 namespace NXZIP
 {
-	struct nxz_header
+	class nxz_header
 	{
+	public:
 		/* Basic Infomation */
 		uint8_t zipxID[5];							/* !< File ID, should keep value as "NXZIP" */
 		uint8_t zipxOriginFileNameLen;				/* !< size of Origin Filename */
@@ -27,20 +29,42 @@ namespace NXZIP
 		uint8_t zipxAlgorithmVerSize;
 		uint8_t* zipxAlgorithmVer;
 
-		/* General Infomation Block */
-		struct 
-		{
-			uint8_t _zipx_reserved : 5u;			/* !< 4 bits in high is reserved */
-			uint8_t _zipx_encoding : 2u;			/* !< encoding type: 00->static huffman, 01->canonical huffman
-														10->arthmetic encoding, 11->reserved */
-			uint8_t _zipx_isParallel : 1u;			/* !< parallel or not */
-		}zipxGeneralInfo;							/* !< Store Infomation bit by bit */
+		/* Encoding Method */
+		uint8_t zipxEncodingLetter;					/* !< Encoding Method, S for Static Huffman Encoding
+														A for Arithmetic Encoding, H for Adaptive Huffman Encoding */
 
-		uint32_t zipxCountDataBlocks;					/* !< the counter of data blocks */
+		uint32_t zipxCountDataBlocks;				/* !< the counter of data blocks */
 
 		/* Other infomation */
 		uint8_t zipxOtherInfoLen;
 		uint8_t* zipxOtherInfo;
+
+		nxz_header()
+		{
+			zipxID[0] = 'N'; zipxID[1] = 'X'; zipxID[2] = 'Z'; zipxID[3] = 'I'; zipxID[4] = 'P';
+			zipxOriginFileName = nullptr;
+			zipxAlgorithmVer = nullptr;
+			zipxOtherInfo = nullptr;
+		}
+
+		void wr_filename(const char* fn, const uint8_t fnl)
+		{
+			zipxOriginFileNameLen = fnl;
+			zipxOriginFileName = (uint8_t*)fn;
+			zipxOriginFileNameCRC32C = NXZ_CRC32_Calculate(0u, zipxOriginFileName, zipxOriginFileNameLen);
+		}
+
+		void wr_algover(const std::string& ver)
+		{
+			zipxAlgorithmVer = (uint8_t*)ver.c_str();
+			zipxAlgorithmVerSize = ver.size();
+		}
+
+		void wr_otherinfo(const std::string& info)
+		{
+			zipxOtherInfo = (uint8_t*)info.c_str();
+			zipxOtherInfoLen = info.size();
+		}
 	};
 	
 	class nxz_datablock
