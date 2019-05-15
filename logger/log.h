@@ -13,12 +13,15 @@
 #ifdef NXZ_DEBUG
 	#define NXZ_TRACE_INFO(fmt,...) \
 		std::printf("%s[%d]-[%s]: "#fmt"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
-#else
-	#define NXZ_TRACE_INFO(fmt,...) (void)(0u)
-#endif /*NXZIP_INFO_TRACK*/
-
-#define NXZ_PRINT(fmt,...) \
+	
+	#define NXZ_PRINT(fmt,...) \
 		std::printf("%s[%d]-[%s]: "#fmt"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
+#else
+	#define NXZ_TRACE_INFO(fmt,...) ((void)0u)
+
+	#define NXZ_PRINT(fmt,...) \
+		std::printf(""#fmt"\n", ##__VA_ARGS__)
+#endif /*NXZIP_INFO_TRACK*/
 
 #endif /*__T_LOGGER_H*/
 
