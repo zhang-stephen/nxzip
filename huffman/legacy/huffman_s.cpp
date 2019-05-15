@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "huffman_s.h"
+#include "../../logger/log.h"
 
 namespace
 {
@@ -298,9 +299,9 @@ void toDecoding(huffNode* hTree, uint8_t* hCode, uint32_t codeLength, uint8_t* h
 	}
 
 	uint16_t position = 0u, numAllCode = numLeafNode * 2u - 1u, xtmp = 0u;;
-	uint32_t tmpIndex = 0u;
+	uint32_t tmpIndex = 0u, i = 0u;
 
-	while(codeLength --> 0u)
+	while(codeLength > 0u)
 	{
 		/* Traverse all of the huffman Tree */
 		for(xtmp = numAllCode; hTree[xtmp]._hLeftChild && hTree[xtmp]._hRightChild; position++)
@@ -313,7 +314,12 @@ void toDecoding(huffNode* hTree, uint8_t* hCode, uint32_t codeLength, uint8_t* h
 			{
 				xtmp =  hTree[xtmp]._hRightChild;
 			}
+			i++;
 		}
+		
+		codeLength -= i; i = 0u;
+
+		// NXZ_PRINT("[INFO]->I'm Here, %d, %4d, 0x%x", codeLength, xtmp, huffKeys[xtmp-1u]);
 
 		/* Get Origin Sequence */
 		dstArr[tmpIndex] = huffKeys[xtmp-1u]; tmpIndex++;
