@@ -85,7 +85,7 @@ uint16_t _m_f_power(uint8_t a, uint8_t b)
 /**
  * @brief	Fast method to calculate [log(2, n+1)](get integer)
  */
-int16_t _m_log_b2(uint8_t n)
+int16_t _m_log_b2(uint16_t n)
 {
 	uint8_t tmpl = 0u;
 
@@ -142,7 +142,7 @@ bool NXZIP::NXZ_mRunLength_Encoding(uint8_t* src, uint32_t srcLength, utility::V
 		{
 			count = getCountOfZeroRepeats(tmpsrc, srcLength);
 			es_c1 = 0x80u | (_m_log_b2(count) << 3u);
-			es_c2 = count + 1u - _m_f_power(2u, (es_c1 & 0x78u) >> 3u);
+			es_c2 = count + 1u - _m_f_power(2u, _m_log_b2(count));
 			tmpvec.push_back(es_c1 | ((es_c2 & 0x0700u) >> 8u));
 			tmpvec.push_back((uint8_t)es_c2);
 			es_c1 = 0u; es_c2 = 0u;
