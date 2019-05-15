@@ -6,11 +6,15 @@
 #ifndef __NXZIP_H
 #define __NXZIP_H
 
+#include "config.h"
+
 #include "bwt/bwt.h"
 #include "crc32/crc32.h"
 #include "file/filedef.h"
 #include "file/iofile.h"
-#include "huffman/legacy/huffman_s.h"
+#include "huffman/huffman.h"
+#include "logger/unistd.h"
+#include "logger/log.h"
 #include "movetofront/mtf.h"
 #include "rlc/rlc.h"
 

@@ -22,7 +22,16 @@ namespace NXZIP::utility
 
 		VLBUFF(uint32_t n)
 		{
+			if(n == 0u) { return ; }
 			ulength = n; uptr = new uint8_t[ulength]{0u}; posbuff = 0u;
+		}
+
+		VLBUFF(VLBUFF& x, uint32_t begin, uint32_t end)
+		{
+			ulength = begin - end;
+			uptr = new uint8_t[ulength];
+
+			std::copy(x.uptr+begin, x.uptr+end, uptr);
 		}
 
 		VLBUFF()
@@ -35,18 +44,41 @@ namespace NXZIP::utility
 			delete[] uptr; ulength = 0u; posbuff = 0u;
 		}
 
-		void allocate(uint32_t n)
+		int8_t allocate(uint32_t n)
 		{
-			if(n == ulength) { return; }
+			if(n == 0u) { return -1; }
+			if(n == ulength) { posbuff = 0u; return 0u; }
 			if(uptr != nullptr) { delete[] uptr; }
 
 			ulength = n; uptr = new uint8_t[ulength]{0u}; posbuff = 0u;
+			return 0u;
 		}
+
+		void allocate(void)
+		{
+			if(!is_null()) { return ; }
+
+			uptr = new uint8_t[ulength]{0u};
+		}
+		
 		void vlcopy(void* begin, uint32_t n)
 		{
 			std::memcpy((void*)(uptr+posbuff), begin, n);
 			posbuff += n;
 		}
+
+		void flush(void)
+		{
+			if(is_null() || empty()) { return ; }
+
+			for(uint32_t i = 0; i < ulength; i++) { uptr[i] = 0u; }
+		}
+
+		bool empty(void) { return ulength == 0u; }
+
+		bool is_null(void) { return uptr == nullptr; }
+
+		uint8_t& operator[](uint32_t n) { return uptr[n]; }
 
 	private:
 		uint32_t posbuff;
@@ -57,8 +89,6 @@ namespace NXZIP::utility
 	{
 		bool isLogging;
 		bool isRemoveFile;
-
-		uint8_t encoding;
 	};
 }
 
