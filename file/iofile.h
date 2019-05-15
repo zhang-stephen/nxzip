@@ -11,17 +11,11 @@
 #include "filedef.h"
 #include "../nxzutil.h"
 
-#ifndef NXZ_ENCODING_METHOD
-	#define NXZ_ENCODING_METHOD 0u		// Encoding Method: static huffman encoding
-#endif /*NXZ_ENCODING_METHOD*/
-
-namespace fs = std::filesystem;
-
 extern const std::string NXZ_Version;
 
 namespace NXZIP
 {
-	void NXZ_Compress(std::string& iflie, NXZIP::utility::CLIOPS& ops, std::string& comment, std::string& ofile, uint8_t rblevel);
+	void NXZ_Compress(std::string& iflie, NXZIP::utility::CLIOPS& ops, std::string& comment, uint8_t rblevel);
 	void NXZ_Decompress(std::string& ifile);
 	void NXZ_ShowZipxInfo(std::string& ifile);
 }

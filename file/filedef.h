@@ -16,14 +16,11 @@
 
 namespace NXZIP
 {
-	class nxz_header
+	class _header
 	{
 	public:
 		/* Basic Infomation */
 		uint8_t zipxID[5];							/* !< File ID, should keep value as "NXZIP" */
-		uint8_t zipxOriginFileNameLen;				/* !< size of Origin Filename */
-		uint8_t* zipxOriginFileName;				/* !< Origin Filename, maximum size is 256 byte */
-		uint32_t zipxOriginFileNameCRC32C;			/* !< crc-32c Value of Origin Filename */
 
 		/* Version of Compress Algorithm */
 		uint8_t zipxAlgorithmVerSize;
@@ -39,19 +36,11 @@ namespace NXZIP
 		uint8_t zipxOtherInfoLen;
 		uint8_t* zipxOtherInfo;
 
-		nxz_header()
+		_header()
 		{
 			zipxID[0] = 'N'; zipxID[1] = 'X'; zipxID[2] = 'Z'; zipxID[3] = 'I'; zipxID[4] = 'P';
-			zipxOriginFileName = nullptr;
 			zipxAlgorithmVer = nullptr;
 			zipxOtherInfo = nullptr;
-		}
-
-		void wr_filename(const char* fn, const uint8_t fnl)
-		{
-			zipxOriginFileNameLen = fnl;
-			zipxOriginFileName = (uint8_t*)fn;
-			zipxOriginFileNameCRC32C = NXZ_CRC32_Calculate(0u, zipxOriginFileName, zipxOriginFileNameLen);
 		}
 
 		void wr_algover(const std::string& ver)
@@ -66,17 +55,16 @@ namespace NXZIP
 			zipxOtherInfoLen = info.size();
 		}
 	};
-	
-	class nxz_datablock
+
+	class _datablock
 	{
 	public:
 		uint32_t zipxOriginDataCRC32C;				/* !< crc-32c Value of Origin Data */
 		uint32_t zipxBWTBlockSize;					/* !< Block size in BWT */
 		uint32_t zipxBWTIndex;						/* !< BWT Index(for inverse-BWT) */
-		
-		uint32_t* zipxHuffmanFreq;					/* !< Huffman Probability Model */
-		uint32_t zipxHuffmanBitsLength;				/* !< huffman code length of bit stream */
-		uint8_t* zipxHuffmanBits;					/* !< pointer of huffman code */
+
+		uint32_t zipxHuffmanCodeSize[2];			/* !< size of Huffman Code cache */
+		uint8_t* zipxHuffmanCode;					/* !< Huffman Code Cache*/
 	};
 }
 

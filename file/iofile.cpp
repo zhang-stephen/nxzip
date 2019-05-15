@@ -4,13 +4,15 @@
  */
 
 #include <cstdio>
+#include <iostream>
 #include <algorithm>
-#include <filesystem>
+#include <vector>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "../nxzip.h"
 #include "iofile.h"
 
-namespace fs = std::filesystem;
 namespace nxzutil = NXZIP::utility;
 
 /* the Version of NXZIP, constant string */
@@ -185,100 +187,98 @@ namespace
 		int seek(uint32_t offset, int origin = SEEK_CUR) { return std::fseek(_p_fp, offset, origin); }
 	};
 
-	/* filesystem helper functions */
 	/**
 	 * @brief	query file exists or not
 	 */
-	inline bool is_file_exists_fs(const std::string fn)
+	bool is_file_exists(char const* fn)
 	{
-		return fs::exists(fs::path(fn));
+		std::FILE *tmp = std::fopen(fn, "r");
+		bool exists = (tmp != nullptr);
+		if (tmp != nullptr) fclose (tmp);
+		return exists;
 	}
 
 	/**
 	 * @brief	query filename is regular file or not
 	 */
-	inline bool is_regular_file_fs(const std::string fn)
+	bool is_regular_file(char const* fn)
 	{
-		return fs::is_regular_file(fs::path(fn));
+		struct stat buf;
+		
+		;stat(fn, &buf);
+		if(S_ISREG(buf.st_mode) == 0u) { return false; }
+		else { return true; }
 	}
 
 	/**
-	 * @brief	query filename is folder or not
+	 * @brief	Get File Size
 	 */
-	inline bool is_directory_fs(const std::string fn)
+	int64_t file_size(char const* fn)
 	{
-		return fs::is_directory(fs::path(fn));
+		struct stat buf = {0u};
+
+		if(stat(fn, &buf) != 0) { return -1; }
+		return buf.st_size;
 	}
 }
 
 /**
  * @brief	Compress Processing
+ * @param	string& ifile
+ * 				input file path string
+ * @param	CLIOPS& ops
+ * 				Command line options
+ * @param	string& comment
+ * 				Comment of the compressed file
+ * @param	string& ofile
+ * 				path of compressed file
+ * @param	uint8_t rblevel
+ * 				BWT Block size(1 for 100kiB, max is 9)
+ * @return	None
+ * @note 	None
  */
-void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::string& comment, std::string& ofile, uint8_t rblevel)
+void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::string& comment, uint8_t rblevel)
 {
 	/* parameters check */
 	if(ifile.empty()) { NXZ_PRINT("[ERROR]->filename ERROR\n"); return ; }
 
-	/* BWT Block Size should be [100kiB, 900kiB] */
-	if(rblevel < 1u || rblevel > 9u) { NXZ_PRINT("[ERROR]->BWT Block Size ERROR: %d\n", rblevel); return ; }
+	/* file type check */
+#ifndef NXZ_DEBUG
+	if(!::is_regular_file(ifile.c_str())) { NXZ_PRINT("[ERROR]->Input File is not Regular Type: %d", ::is_regular_file(ifile.c_str())); return ; }
+#endif /* NXZ_DEBUG */
 
-	/* Input File Check */
-	if(::is_file_exists_fs(ifile) == false) { NXZ_PRINT("[ERROR]->The specified file could not be found\n"); return ; }
-	else
-	{
-		if(is_regular_file_fs(ifile) == false) { NXZ_PRINT("[ERROR]->File Type Error\n"); return ; }
-	}
+	/* BWT Block Size should be [100kiB, 900kiB] */
+	if(rblevel < 1u || rblevel > 9u) { NXZ_PRINT("[ERROR]->BWT Block Size ERROR: %d", rblevel); return ; }
 
 	/* Output File Check and filename processing */
-	if(::is_file_exists_fs(ofile))
-	{
-		if(!::is_regular_file_fs(ofile))
-		{
-			if(::is_directory_fs(ofile)) { ofile = (fs::path(ofile) / fs::path(ifile).filename()).string() + ".xzp"; }
-			else { NXZ_PRINT("[ERROR]->File Type Error"); return ; }
-		}
-	}
-
-	if(!ofile.empty())
-	{
-		if(ofile.substr(ofile.size() - 4u) != ".xzp") { ofile += ".xzp"; }
-	}
-	else
-	{
-		ofile = ifile + ".xzp";
-	}
+	std::string ofile = ifile + ".xcp";
 
 	/* input file size */
-	uint32_t tmpfsize = fs::file_size(fs::path(ifile));
+	uint32_t tmpfsize = ::file_size(ifile.c_str());
 	uint32_t rbuffsize = rblevel * 100u * __sizeof_kilobytes;
 
-	/* Temporary String Class */
-	std::string tmp = fs::path(ifile).filename().string();		// only took the filename, not full path
+	NXZ_TRACE_INFO("Input File Size: %ld", tmpfsize);
 
 	/* try to open files */
 	::_io_file I_fp(ifile.c_str(), "r"),
-				O_fp(ofile.c_str(), "w", true);
-	if(!I_fp.is_open()) { NXZ_PRINT("[ERROR]->No Permission to Read File\n"); return ; }
-	if(!O_fp.is_open()) { NXZ_PRINT("[ERROR]->No Permission to Write File\n"); return ; }
+				O_fp(ofile.c_str(), "w");
+	if(!I_fp.is_open()) { NXZ_PRINT("[ERROR]->No Permission to Read File"); return ; }
+	if(!O_fp.is_open()) { NXZ_PRINT("[ERROR]->No Permission to Write File"); return ; }
 
 	/* Prepare the xzp file header */
-	nxz_header fheader;
-	fheader.wr_filename(tmp.c_str(), (const uint8_t)tmp.size());
+	_header fheader;
 	fheader.wr_algover(NXZ_Version);
 	fheader.wr_otherinfo(comment);
 
-	fheader.zipxEncodingLetter = 'S';
+	fheader.zipxEncodingLetter = 'H';
 	fheader.zipxCountDataBlocks = tmpfsize / rbuffsize + (tmpfsize % rbuffsize == 0u ? 0u : 1u);
 
 	nxzutil::VLBUFF mheader_buff;
-	mheader_buff.allocate(5u + 1u + fheader.zipxOriginFileNameLen + 4u + 
-							1u + fheader.zipxAlgorithmVerSize + 
-							1u + 4u + 
-							1u + fheader.zipxOtherInfoLen);
+	mheader_buff.allocate(5u + 
+						1u + fheader.zipxAlgorithmVerSize + 
+						1u + 4u + 
+						1u + fheader.zipxOtherInfoLen);
 	mheader_buff.vlcopy((void*)fheader.zipxID, 5u);
-	mheader_buff.vlcopy((void*)&fheader.zipxOriginFileNameLen, 1u);
-	mheader_buff.vlcopy((void*)fheader.zipxOriginFileName, fheader.zipxOriginFileNameLen);
-	mheader_buff.vlcopy((void*)&fheader.zipxOriginFileNameCRC32C, sizeof(uint32_t));
 	mheader_buff.vlcopy((void*)&fheader.zipxAlgorithmVerSize, sizeof(uint8_t));
 	mheader_buff.vlcopy((void*)fheader.zipxAlgorithmVer, fheader.zipxAlgorithmVerSize);
 	mheader_buff.vlcopy((void*)&fheader.zipxEncodingLetter, sizeof(uint8_t));
@@ -295,43 +295,43 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 	/* write data block into xzp file */
 	for(uint32_t i = 0u; i < fheader.zipxCountDataBlocks; i++)
 	{
+		NXZ_TRACE_INFO("Compress is ongoing. Blocks: %d/%d", i+1, fheader.zipxCountDataBlocks);
+
 		uint32_t tmprbsize = (i == fheader.zipxCountDataBlocks - 1u && tmpfsize % rbuffsize != 0u) ? 
 								tmpfsize - rbuffsize * i : 
 								rbuffsize;
 		
 		/* read file to cache */
-		if(I_fp.read(_t_rbuff, tmprbsize) < 0u) { NXZ_PRINT("[ERROR]->Block: %d, file read Failed!\n"); return ; }
+		if(I_fp.read(_t_rbuff, tmprbsize) < 0u) { NXZ_PRINT("[ERROR]->Block: %d, file read Failed"); return ; }
 
 		/* Burrows-Wheeler Transform */
 		BWT _t_bwt(tmprbsize);
-		if(!NXZ_BWTransform2(_t_rbuff.uptr, _t_rbuff.ulength, &_t_bwt)) { NXZ_PRINT("[ERROR]->Block: %d, BWT Failed!\n", i+1u); return ; }
+		if(!NXZ_BWTransform2(_t_rbuff.uptr, _t_rbuff.ulength, &_t_bwt)) { NXZ_PRINT("[ERROR]->Block: %d, BWT Failed", i+1u); return ; }
 
 		/* Move-To Front Transform */
-		nxzutil::VLBUFF _t_mtf(_t_bwt.length);
-		if(!NXZ_MoveToFront(_t_bwt.cstr, _t_bwt.length, _t_mtf.uptr)) { NXZ_PRINT("[ERROR]->Block: %d, MTF Failed!\n", i+1u); return ; }
+		utility::VLBUFF _t_mtf(_t_bwt.length);
+		if(!NXZ_MoveToFront(_t_bwt.cstr, _t_bwt.length, _t_mtf.uptr)) { NXZ_PRINT("[ERROR]->Block: %d, MTF Failed", i+1u); return ; }
 
 		/* Run-Length Encoding */
-		nxzutil::VLBUFF _t_rlc;
-		if(NXZ_mRunLength_Encoding(_t_mtf.uptr, _t_mtf.ulength, &_t_rlc) == false) { NXZ_PRINT("[ERROR]->Block: %d, RLE Failed!\n", i+1u); return ; }
+		utility::VLBUFF _t_rlc;
+		if(NXZ_mRunLength_Encoding(_t_mtf.uptr, _t_mtf.ulength, &_t_rlc) == false) { NXZ_PRINT("[ERROR]->Block: %d, RLE Failed", i+1u); return ; }
 
-		/* Huffman Encoding */
-		sHuffman _t_huff{{0u}, 0u, nullptr};
-		nxzutil::VLBUFF _t_hbits;
-		if(!NXZ_sHuffmanEncode(_t_rlc.uptr, _t_rlc.ulength, &_t_huff)) { NXZ_PRINT("[ERROR]->Block: %d, Huffman Encoding Failed!\n", i+1u); return ; }
-		if(!NXZ_Huffman_RuduceByte2Bit(_t_huff.huffCode, _t_huff.huffCodeLen, &_t_hbits)) { NXZ_PRINT("[ERROR]->Block: %d, Bit Stream Failed!\n", i+1u); return ; }
+		utility::VLBUFF _h_code;
+		if(!NXZ_Huffman_Encoding(&_t_rlc, &_h_code)) { NXZ_PRINT("[ERROR]->Block: %d, Huffman Encoding Failed", i+1u); return ; }
 
 		/* prepare the data block */
 		uint32_t _db_crc32 = NXZ_CRC32_Calculate(0u, _t_rbuff.uptr, _t_rbuff.ulength);
-		nxzutil::VLBUFF _m_db_cache(sizeof(uint32_t) * (1u + 1u + 1u + 256u + 1u) + _t_hbits.ulength);
+		// nxzutil::VLBUFF _m_db_cache(sizeof(uint32_t) * (1u + 1u + 1u + 256u + 1u) + _t_hbits.ulength);
+		utility::VLBUFF _m_db_cache(sizeof(uint32_t) * 5u + _h_code.ulength);
 		_m_db_cache.vlcopy((void*)&_db_crc32, sizeof(uint32_t));
 		_m_db_cache.vlcopy((void*)&_t_bwt.length, sizeof(uint32_t));
 		_m_db_cache.vlcopy((void*)&_t_bwt.index, sizeof(uint32_t));
-		_m_db_cache.vlcopy((void*)_t_huff.elemFreq, sizeof(uint32_t) * 256u);
-		_m_db_cache.vlcopy((void*)&_t_huff.huffCodeLen, sizeof(uint32_t));
-		_m_db_cache.vlcopy((void*)_t_hbits.uptr, _t_hbits.ulength);
+		_m_db_cache.vlcopy((void*)&_t_rlc.ulength, sizeof(uint32_t));
+		_m_db_cache.vlcopy((void*)&_h_code.ulength, sizeof(uint32_t));
+		_m_db_cache.vlcopy((void*)_h_code.uptr, _h_code.ulength);
 
 		/* write into file */
-		if(O_fp.write(_m_db_cache.uptr, _m_db_cache.ulength) != 0u) { NXZ_PRINT("[ERROR]->Write Data Block %d Failed!", i); return ; }
+		if(O_fp.write(_m_db_cache.uptr, _m_db_cache.ulength) != 0u) { NXZ_PRINT("[ERROR]->Write Data Block %d Failed", i); return ; }
 	}
 
 	/* close files */
@@ -340,7 +340,7 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 
 	/* Try to delete input file */
 	if(ops.isRemoveFile) { std::remove(ifile.c_str()); }
-	if(!fs::exists(fs::path(ifile))) { NXZ_PRINT("[WARNING]->Compress Complete, Delete Failed!"); return ; }
+	// if(!fs::exists(fs::path(ifile))) { NXZ_PRINT("[WARNING]->Compress Complete, Delete Failed"); return ; }
 }
 
 /**
@@ -349,10 +349,15 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 void NXZIP::NXZ_Decompress(std::string& ifile)
 {
 	/* Parameter check */
-	if(ifile.empty()) { NXZ_PRINT("[ERROR]->Filename Empty!"); return ; }
+	if(ifile.empty()) { NXZ_PRINT("[ERROR]->Filename Empty"); return ; }
+
+	/* file extension check */
+	if(ifile.substr(ifile.size() - 4u) != ".xcp") { NXZ_PRINT("[WARNING]->Compressed File Externsion Error"); }
 
 	/* file check */
-	if(!fs::exists(fs::path(ifile))) { NXZ_PRINT("Compressed File not Exist!"); return ; }
+#ifndef NXZ_DEBUG
+	if(!::is_file_exists(ifile.c_str())) { NXZ_PRINT("[ERROR]->Compressed File not Exist"); return ; }
+#endif /*NXZ_DEBUG*/
 
 	/* try to open compressed file */
 	::_io_file I_fp(ifile.c_str(), "r");
@@ -361,29 +366,19 @@ void NXZIP::NXZ_Decompress(std::string& ifile)
 	/* for file read error handling */
 	bool _err_f = false; /* general flag of error */
 ERR_READFAIL:
-	if(_err_f) { NXZ_PRINT("[ERROR]->File Read Failed, unknown reason!"); _err_f = false; return ; }
+	if(_err_f) { NXZ_PRINT("[ERROR]->File Read Failed, unknown reason"); _err_f = false; return ; }
 
 	/* read file header */
 	uint8_t _id[5] = {0u};
 	if(I_fp.read(_id, 5u) != 0u) { _err_f = true; goto ERR_READFAIL; }
-	if(std::memcmp((const void*)_id, (const void*)"NXZIP", 5u) != 0u) { NXZ_PRINT("[ERROR]->Unexpected File Hader!"); return ; }
-
-	uint8_t _ofnl = 0u;		/* origin file name length */
-	if(I_fp.read(&_ofnl, 1u) != 0u) { _err_f = true; goto ERR_READFAIL; };
-
-	std::string _ofn;		/* origin file name */
-	if(I_fp.read((uint8_t*)&_ofn[0u], _ofnl) != 0u) { _err_f = true; goto ERR_READFAIL; }
-
-	uint32_t _ofncrc32 = 0u; /* crc-32c value of origin file name */
-	if(I_fp.read((uint8_t*)&_ofncrc32, sizeof(uint32_t)) != 0u) { _err_f = true; goto ERR_READFAIL; }
-	if(_ofncrc32 != NXZ_CRC32_Calculate(0u, (uint8_t*)&_ofn[0u], _ofnl)) { NXZ_PRINT("[ERROR]->FILENAME crc-32c check failed!"); return ; }
+	if(std::memcmp((const void*)_id, (const void*)"NXZIP", 5u) != 0u) { NXZ_PRINT("[ERROR]->Unexpected File Hader"); return ; }
 
 	uint8_t _versize = 0u; /* Algorithm String Length */
 	if(I_fp.read(&_versize, 1u) != 0u) { _err_f = true; goto ERR_READFAIL; }
 
-	std::string _ver;		/* Algorithm String */
+	std::string _ver(_versize, '\0');		/* Algorithm String */
 	if(I_fp.read((uint8_t*)&_ver[0u], _versize) != 0u) { _err_f = true; goto ERR_READFAIL; }
-	if(std::memcmp((const void*)NXZ_Version.c_str(), (const void*)_ver.c_str(), _versize) == 1u) { NXZ_PRINT("[WARNING]->Current Edition is Lower than that Generated FILE! Try to Decompress!"); }
+	if(std::memcmp((const void*)NXZ_Version.c_str(), (const void*)_ver.c_str(), _versize) == 1u) { NXZ_PRINT("[WARNING]->Current Edition is Lower than that Generated FILE! Try to Decompress"); }
 
 	uint8_t _encode = 0u; /* Encode method */
 	if(I_fp.read(&_encode, 1u) != 0u) { _err_f = true; goto ERR_READFAIL; }
@@ -393,49 +388,42 @@ ERR_READFAIL:
 
 	uint8_t _cmml = 0u; 	/* Comment length */
 	if(I_fp.read(&_cmml, 1u) != 0u) { _err_f = true; goto ERR_READFAIL; }
-	if(I_fp.seek(_cmml) != 0u) { NXZ_PRINT("[ERROR]->FILE Pointer ERROR!"); return ; }
+	if(I_fp.seek(_cmml) != 0u) { NXZ_PRINT("[ERROR]->FILE Pointer ERROR"); return ; }
 
 	/* try to open outfile */
-	// FIXME: ofile string is error!
-	 std::string ofile = (fs::current_path() / fs::path(_ofn)).string();
-	// std::string ofile = _ofn;
-	::_io_file O_fp(ofile.c_str(), "w", true);
+	std::string ofile(ifile, 0u, ifile.size() - 4u);
+	::_io_file O_fp(ofile.c_str(), "w");
 	if(!O_fp.is_open()) {NXZ_PRINT("[ERROR]->No Permission to Write this Directory"); return ; }
 
 	/* Create Temporary Variables for Decompressing */
-	std::vector<uint32_t> _g_db_info(1u + 1u + 1u + 256u + 1u, 0u);
+	// std::vector<uint32_t> _g_db_info(1u + 1u + 1u + 1u + 256u, 0u);
+	std::vector<uint32_t> _g_db_info(5u, 0u);
 
 	/* read data block and decompress */
 	for(uint32_t i = 0u; i < _db_count; i++)
 	{
+		NXZ_TRACE_INFO("Compress is ongoing. Blocks: %d/%d", i+1, _db_count);
+
 		/* read datablock info */
-		if(I_fp.read((uint8_t*)&_g_db_info[0u], _g_db_info.size()) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt!", i); return ; }
+		if(I_fp.read((uint8_t*)&_g_db_info[0u], _g_db_info.size() * sizeof(uint32_t)) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt", i); return ; }
+
+		// NXZ_TRACE_INFO("[INFO]->Huffman Code Length: %ld bits", _g_db_info[3]);
 
 		/* read Byte Stream */
-		utility::VLBUFF _x_rbuff(_g_db_info.back() / __CHAR_BIT__ + (_g_db_info.back() % __CHAR_BIT__ == 0u ? 0u : 1u));
-		if(I_fp.read(_x_rbuff, _x_rbuff.ulength) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt!", i); return ; }
+		utility::VLBUFF _x_rbuff(_g_db_info[4]);
+		if(I_fp.read(_x_rbuff, _x_rbuff.ulength) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt", i); return ; }
 
-		utility::VLBUFF _x_tmp, _x_rlc;	/* _x_rlc for RLE before Order-zero code */
+		//utility::VLBUFF _x_tmp, _x_rlc;	/* _x_rlc for RLE before Order-zero code */
+		utility::VLBUFF _x_rlc(_g_db_info[3]);
 
-		switch(_encode)
-		{
-		case 'S':
-			/* Expand Byte Stream to single Bit Stream */
-			_x_rlc.allocate(_g_db_info.back());
-			if(!NXZ_Huffman_ExpandBit2Byte(_x_rbuff.uptr, _x_rbuff.ulength, _g_db_info.back(), &_x_tmp)) { NXZ_PRINT("[ERROR]->Huffman Decoding Progress 1 Failed in %d Block", i); return ; }
-			if(!NXZ_sHuffmanDecode(_x_rlc.uptr, _x_rlc.ulength, &_g_db_info[3], _x_tmp.uptr, _x_tmp.ulength)) { NXZ_PRINT("[ERROR]->Huffman Decoding Progress 2 Failed in %d Block", i); return ; }
-			break ; 
-		case 'H':
-			/* TODO: Adaptive Huffman Decoding */
-			break;
-		case 'A':
-			/* TODO: Arithmetic Decoding */
-			break;
-		default:
-			NXZ_PRINT("[ERROR]->Unknown Encoding Method");
-			return;
-		}
+		/* Huffman Decoding */
+		if(!NXZ_Huffman_Decoding(&_x_rbuff, &_x_rlc)) { NXZ_PRINT("[ERROR]->Huffman Decoding Error in %d Block", i); return ; }
 
+		// TODO: TO Fix it
+		// _x_rlc.allocate(_g_db_info[3]);
+		// if(!NXZ_Huffman_ExpandBit2Byte(_x_rbuff.uptr, _x_rbuff.ulength, _g_db_info[3], &_x_tmp)) { NXZ_PRINT("[ERROR]->Huffman Decoding Progress 1 Failed in %d Block", i); return ; }
+		// if(!NXZ_sHuffmanDecode(_x_rlc.uptr, _x_rlc.ulength, &_g_db_info[4], _x_tmp.uptr, _x_tmp.ulength)) { NXZ_PRINT("[ERROR]->Huffman Decoding Progress 2 Failed in %d Block", i); return ; }
+	 
 		/* Run-Length Decoding */
 		utility::VLBUFF _x_mtf;
 		if(!NXZ_mRunLength_Decoding(_x_rlc.uptr, _x_rlc.ulength, &_x_mtf)) { NXZ_PRINT("[ERROR]->Run-Length Decoding Failed in %d block", i); return ; }
@@ -454,6 +442,10 @@ ERR_READFAIL:
 		/* Write into outfile */
 		O_fp.write(_x_obuff);
 	}
+
+	/* Close Files */
+	I_fp.close();
+	O_fp.close();
 }
 
 /* End of File */
