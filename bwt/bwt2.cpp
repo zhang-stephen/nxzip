@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstring>
+
 #include "bwt.h"
 
 /* Anoymous Namespace */
@@ -22,63 +23,32 @@ namespace
 		suffix() { index = 0u; rank[0] = 0u; rank[1] = 0u; }
 	};
 	
-	/**
-	 * @brief get the index of specific element
-	 */
-	template<typename T>
-	inline int64_t getIndexViaTimes(T* seq, T elem, size_t len, uint32_t times)
+	/* bucket Sort */
+	void char_sort_to(const char *base, size_t sz, char *output) 
 	{
-		/* parameters check */
-		if(nullptr == seq || times == 0 || times > len)
+		uint32_t buckets[256];
+		memset(buckets, 0, sizeof(uint32_t)*256);
+		size_t i = 0;
+
+		for (; i + 4 < sz; i += 4) 
 		{
-			return -1;
+			const char *ptr = base + i;
+			buckets[(uint8_t)ptr[0]]++;
+			buckets[(uint8_t)ptr[1]]++;
+			buckets[(uint8_t)ptr[2]]++;
+			buckets[(uint8_t)ptr[3]]++;
 		}
 
-		int64_t i = 0u;
-		uint32_t tmptimes = 0u;
-
-		/* Search Element via appearance times */
-		while(len --> 0u)
+		for (; i < sz; i++) 
 		{
-			if(seq[i] == elem)
-				tmptimes++;
-
-			if(tmptimes == times)
-				break;
-
-			i++;
+			const char *ptr = base + i;
+			buckets[(uint8_t)ptr[0]]++;
 		}
 
-		/* found nothing */
-		if(tmptimes == 0u || tmptimes < times)
-			i = -1;
-
-		return i;
-	}
-
-	/**
-	 * @brief Get the Times in specific memory area
-	 */
-	template<typename T>
-	inline int64_t getTimesViaIndex(T* seq, T elem, size_t posBegin, size_t posEnd)
-	{
-		/* Parametes Check */
-		if(nullptr == seq || posBegin > posEnd)
-		{
-			return -1;
+		for (uint16_t i = 0; i < 256; i++) {
+			memset(output, static_cast<char>(i), buckets[i]);
+			output += buckets[i];
 		}
-
-		uint32_t times = 0u;
-
-		for(size_t i = posBegin; i < posEnd; i++)
-		{
-			if(seq[i] == elem)
-			{
-				times++;
-			}
-		}
-
-		return times;
 	}
 }
 
@@ -229,26 +199,45 @@ bool NXZIP::NXZ_BWTransform_Inverse2(uint8_t* srcArray, uint32_t length, uint32_
 		return false;
 	}
 
-	/* Allocate the memory */
-	uint32_t cursor = index;
-	uint32_t tmplen = length, tmp = 0u;
-	uint8_t* firstColumn = new uint8_t[length];
-	uint8_t* lastColumn = srcArray;
+	char *F = new char[length];
+    uint32_t *C = new uint32_t[length];
+    char_sort_to((const char*)srcArray, length, F);
 
-	/* Construct the first Column */
-	std::memcpy(firstColumn, lastColumn, length);
-	std::sort(firstColumn, firstColumn+length);
-
-	while(tmplen --> 0u)
+    /* marks first occurrence of char in F */
+    int32_t M[256];
+    memset(M, 0xff, sizeof(int32_t)*256);
+    for (size_t i = 0; i < length; i++) 
 	{
-		dstArray[tmplen] = lastColumn[cursor];
+    	uint8_t k = F[i];
+    	if (M[k] < 0) { M[k] = i; }
+    }
 
-		tmp = (uint32_t)(::getTimesViaIndex(lastColumn, lastColumn[cursor], 0, cursor+1u));
-		cursor = (uint32_t)(::getIndexViaTimes(firstColumn, lastColumn[cursor], length, tmp));
-	}
+    /* marks number of occurences of L[j] in L for all j */
+    uint32_t tmp[256];
+    memset(tmp, 0, sizeof(int32_t)*256);
+    memset(C, 0, sizeof(uint32_t)*length);
+    for (size_t i = 0; i < length; i++) 
+	{
+        uint8_t k = srcArray[i];
+        C[i] = tmp[k]++;
+    }
 
-	/* Destroy Allocated Memory */
-	delete[] firstColumn;
+    /* compute ibwt backwards */
+    char *buf = new char[length];
+    char *ptr = buf + length - 1;
+    *ptr-- = F[0];
+    uint32_t j = 0;
+    for (size_t i = 1; i < length; i++) 
+	{
+        *ptr-- = srcArray[j];
+        j = M[(uint8_t)srcArray[j]] + C[j];
+    }
+
+	std::copy(buf, buf+length, dstArray);
+
+    delete[] F;
+    delete[] C;
+    delete[] buf;
 
 	return true;
 }
