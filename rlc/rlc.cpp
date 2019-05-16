@@ -11,16 +11,16 @@ int8_t isZeroRepeatMoreThan2Times(uint8_t* buff, uint32_t length);
 uint16_t getCountOfZeroRepeats(uint8_t* ptr, uint32_t length);
 uint8_t getCountOfNonZeros(uint8_t* ptr, uint32_t length);
 uint16_t _m_f_power(uint8_t a, uint8_t b);
-int16_t _m_log_b2(uint8_t n);
+int16_t _m_log_b2(uint16_t n);
 
 int8_t isZeroRepeatMoreThan2Times(uint8_t* buff, uint32_t length)
 {
 	/* parameters check */
 	if(buff == nullptr || length == 0u) { return -1; }
-	if(length <= 2u) { return 1u; }
+	if(length < 2u) { return 1u; }
 
 	/* check elements */
-	if(*buff == 0u && *buff == *(buff+1u) && *buff == *(buff+2u)) { return 0u; }
+	if(*buff == 0u && *buff == *(buff+1u) /*&& *buff == *(buff+2u)*/) { return 0u; }
 	else { return 1u; }
 }
 
@@ -29,7 +29,7 @@ uint16_t getCountOfZeroRepeats(uint8_t* ptr, uint32_t length)
 	uint16_t c = 0u;
 	uint8_t* tmpptr = ptr;
 
-	if(length < 2u) { return length + 1u; }
+	if(length <= 2u) { return length; }
 	else
 	{
 		while(*tmpptr == 0u && *tmpptr == *(tmpptr+1u))
@@ -128,7 +128,7 @@ bool NXZIP::NXZ_mRunLength_Encoding(uint8_t* src, uint32_t srcLength, utility::V
 	}
 
 	/* create Temporary Data */
-	std::vector<uint8_t> tmpvec;
+	std::vector<uint8_t> tmpvec(0u);
 	uint8_t* tmpsrc = src;
 	uint8_t es_c1 = 0u;		// es_cx: Escape Character x(x = 1, 2)
 	uint16_t es_c2 = 0u, count = 0u;				// temporary of es_c2
@@ -183,7 +183,7 @@ bool NXZIP::NXZ_mRunLength_Decoding(uint8_t* rlc, uint32_t rlcLength, utility::V
 	}
 
 	/* create temporary variables */
-	std::vector<uint8_t> tmpvec;
+	std::vector<uint8_t> tmpvec(0u);
 	uint16_t mcount = 0u, tmp = 0u;
 	uint8_t* tmprlc = rlc;
 	bool _r_flag = false;
@@ -195,7 +195,7 @@ bool NXZIP::NXZ_mRunLength_Decoding(uint8_t* rlc, uint32_t rlcLength, utility::V
 		if((*tmprlc & 0x80u) != 0u)	// zero sequence
 		{
 			/* read 2nd escape character */
-			tmp = ((*tmprlc & 0x03u) << 8u) | *(tmprlc+1u);
+			tmp = ((*tmprlc & 0x07u) << 8u) | *(tmprlc+1u);
 			mcount = _m_f_power(2u, (*tmprlc & 0x78u) >> 3u) + tmp - 1u;
 			tmprlc += 2u;
 

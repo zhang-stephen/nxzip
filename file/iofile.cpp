@@ -243,9 +243,7 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 	if(ifile.empty()) { NXZ_PRINT("[ERROR]->filename ERROR\n"); return ; }
 
 	/* file type check */
-#ifndef NXZ_DEBUG
 	if(!::is_regular_file(ifile.c_str())) { NXZ_PRINT("[ERROR]->Input File is not Regular Type: %d", ::is_regular_file(ifile.c_str())); return ; }
-#endif /* NXZ_DEBUG */
 
 	/* BWT Block Size should be [100kiB, 900kiB] */
 	if(rblevel < 1u || rblevel > 9u) { NXZ_PRINT("[ERROR]->BWT Block Size ERROR: %d", rblevel); return ; }
@@ -295,7 +293,7 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 	/* write data block into xzp file */
 	for(uint32_t i = 0u; i < fheader.zipxCountDataBlocks; i++)
 	{
-		NXZ_TRACE_INFO("Compress is ongoing. Blocks: %d/%d", i+1, fheader.zipxCountDataBlocks);
+		NXZ_PRINT("Compress is ongoing. Blocks: %d/%d", i+1, fheader.zipxCountDataBlocks);
 
 		uint32_t tmprbsize = (i == fheader.zipxCountDataBlocks - 1u && tmpfsize % rbuffsize != 0u) ? 
 								tmpfsize - rbuffsize * i : 
@@ -355,9 +353,7 @@ void NXZIP::NXZ_Decompress(std::string& ifile)
 	if(ifile.substr(ifile.size() - 4u) != ".xcp") { NXZ_PRINT("[WARNING]->Compressed File Externsion Error"); }
 
 	/* file check */
-#ifndef NXZ_DEBUG
 	if(!::is_file_exists(ifile.c_str())) { NXZ_PRINT("[ERROR]->Compressed File not Exist"); return ; }
-#endif /*NXZ_DEBUG*/
 
 	/* try to open compressed file */
 	::_io_file I_fp(ifile.c_str(), "r");
@@ -402,7 +398,7 @@ ERR_READFAIL:
 	/* read data block and decompress */
 	for(uint32_t i = 0u; i < _db_count; i++)
 	{
-		NXZ_TRACE_INFO("Compress is ongoing. Blocks: %d/%d", i+1, _db_count);
+		NXZ_PRINT("Decompress is ongoing. Blocks: %d/%d", i+1, _db_count);
 
 		/* read datablock info */
 		if(I_fp.read((uint8_t*)&_g_db_info[0u], _g_db_info.size() * sizeof(uint32_t)) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt", i); return ; }
@@ -419,21 +415,16 @@ ERR_READFAIL:
 		/* Huffman Decoding */
 		if(!NXZ_Huffman_Decoding(&_x_rbuff, &_x_rlc)) { NXZ_PRINT("[ERROR]->Huffman Decoding Error in %d Block", i); return ; }
 
-		// TODO: TO Fix it
-		// _x_rlc.allocate(_g_db_info[3]);
-		// if(!NXZ_Huffman_ExpandBit2Byte(_x_rbuff.uptr, _x_rbuff.ulength, _g_db_info[3], &_x_tmp)) { NXZ_PRINT("[ERROR]->Huffman Decoding Progress 1 Failed in %d Block", i); return ; }
-		// if(!NXZ_sHuffmanDecode(_x_rlc.uptr, _x_rlc.ulength, &_g_db_info[4], _x_tmp.uptr, _x_tmp.ulength)) { NXZ_PRINT("[ERROR]->Huffman Decoding Progress 2 Failed in %d Block", i); return ; }
-	 
 		/* Run-Length Decoding */
 		utility::VLBUFF _x_mtf;
 		if(!NXZ_mRunLength_Decoding(_x_rlc.uptr, _x_rlc.ulength, &_x_mtf)) { NXZ_PRINT("[ERROR]->Run-Length Decoding Failed in %d block", i); return ; }
 
 		/* Inverse Move-To-Front Transform */
-		utility::VLBUFF _x_bwt(_g_db_info[2u]);
-		if(!NXZ_MoveToFront_Inverse(_x_mtf.uptr, _x_mtf.ulength, _x_bwt.uptr)) { NXZ_PRINT("[ERROR]->Inverse-MTF Failed in %d block", i); return ; }
+		utility::VLBUFF _x_bwt(_g_db_info[1u]);
+		if(!NXZ_MoveToFront_Inverse(_x_mtf.uptr, _x_mtf.ulength-1, _x_bwt.uptr)) { NXZ_PRINT("[ERROR]->Inverse-MTF Failed in %d block", i); return ; }
 
 		/* Inverse Burrows-Wheeler Transform */
-		utility::VLBUFF _x_obuff(_g_db_info[2u]);
+		utility::VLBUFF _x_obuff(_g_db_info[1u]);
 		if(!NXZ_BWTransform_Inverse2(_x_bwt.uptr, _x_bwt.ulength, _g_db_info[2u], _x_obuff.uptr)) { NXZ_PRINT("[ERROR]->Inverse-BWT Failed in %d block", i); return ; }
 
 		/* CRC-32c for data block */
@@ -446,6 +437,62 @@ ERR_READFAIL:
 	/* Close Files */
 	I_fp.close();
 	O_fp.close();
+}
+
+/**
+ * @brief	Read Compressed File Information
+ */
+void NXZIP::NXZ_ShowZipxInfo(std::string& ifile)
+{
+	/* parameters check */
+	if(ifile.empty()) { NXZ_PRINT("[ERROR]->File is Corrupt!"); return ; }
+
+	/* read sys information of compressed file */
+	struct stat mystat;
+	if(stat(ifile.c_str(), &mystat) != 0) { NXZ_PRINT("[ERROR]->Read File Info Failed!"); return ; }
+
+	::_io_file xfile(ifile.c_str(), "r");
+
+
+	/* for file read error handling */
+	bool _err_f = false; /* general flag of error */
+xERR_READFAIL:
+	if(_err_f) { NXZ_PRINT("[ERROR]->File Read Failed, unknown reason"); _err_f = false; return ; }
+	uint8_t _id[5] = {0u};
+	if(xfile.read(_id, 5u) != 0u) { _err_f = true; goto xERR_READFAIL; }
+	if(std::memcmp((const void*)_id, (const void*)"NXZIP", 5u) != 0u) { NXZ_PRINT("[ERROR]->Unexpected File Hader"); return ; }
+
+	uint8_t _versize = 0u; /* Algorithm String Length */
+	if(xfile.read(&_versize, 1u) != 0u) { _err_f = true; goto xERR_READFAIL; }
+
+	std::string _ver(_versize, '\0');		/* Algorithm String */
+	if(xfile.read((uint8_t*)&_ver[0u], _versize) != 0u) { _err_f = true; goto xERR_READFAIL; }
+	if(std::memcmp((const void*)NXZ_Version.c_str(), (const void*)_ver.c_str(), _versize) == 1u) { NXZ_PRINT("[WARNING]->Current Edition is Lower than that Generated FILE! Try to Decompress"); }
+
+	uint8_t _encode = 0u; /* Encode method */
+	if(xfile.read(&_encode, 1u) != 0u) { _err_f = true; goto xERR_READFAIL; }
+
+	uint32_t _db_count = 0u; /* Counts of Data Blocks */
+	if(xfile.read((uint8_t*)&_db_count, sizeof(uint32_t)) != 0u) { _err_f = true; goto xERR_READFAIL; }
+
+	uint8_t _cmml = 0u; 	/* Comment length */
+	if(xfile.read(&_cmml, 1u) != 0u) { _err_f = true; goto xERR_READFAIL; }
+
+	std::string _cm(_cmml, '\0');	/* Comment */
+	if(xfile.read((uint8_t*)&_cm[0], _cmml) != 0u) { _err_f = true; goto xERR_READFAIL; }
+
+	xfile.close();
+
+	/*  */
+	std::string _codec = _encode == 'S' ? "Static Huffman Encoding" : "Arithmetic Encoding";
+
+	/* stdout */
+	NXZ_PRINT("Compressed File: %s", ifile.c_str());
+	NXZ_PRINT("Source File: %s", ifile.substr(0u, ifile.size() -4).c_str());
+	NXZ_PRINT("Compressed Size: %d Bytes", mystat.st_size);
+	NXZ_PRINT("Block Count: %d", _db_count);
+	NXZ_PRINT("Algor Version: %s", _ver.c_str());
+	NXZ_PRINT("Encoding: %s", _codec.c_str());
 }
 
 /* End of File */

@@ -64,24 +64,27 @@ int main(int argc, char* argv[])
 		std::string comment;
 
 		/* NXZIP Operations */
-		// Data Compressing
-		if(unzipFlag.getValue() == false)
-		{
-			NXZIP::NXZ_Compress(ifile, cliops, comment, (uint8_t)dictSize.getValue());
-			return EXIT_SUCCESS;
-		}
-
-		// Data Decompressing
-		if(unzipFlag.getValue() == true)
-		{
-			NXZIP::NXZ_Decompress(ifile);
-			return EXIT_SUCCESS;
-		}
-
 		// Show info
 		if(readinfo.getValue() == true)
 		{
+			NXZIP::NXZ_ShowZipxInfo(ifile);
 			return EXIT_SUCCESS;
+		}
+		else
+		{
+			// Data Compressing
+			if(unzipFlag.getValue() == false)
+			{
+				NXZIP::NXZ_Compress(ifile, cliops, comment, (uint8_t)dictSize.getValue());
+				return EXIT_SUCCESS;
+			}
+
+			// Data Decompressing
+			if(unzipFlag.getValue() == true)
+			{
+				NXZIP::NXZ_Decompress(ifile);
+				return EXIT_SUCCESS;
+			}
 		}
 	}
 	catch(TCLAP::ArgException &e)
