@@ -113,7 +113,7 @@ bool NXZIP::NXZ_MoveToFront_Inverse(const uint8_t* nArray, uint32_t nSize, uint8
     auto it = __dict.begin();
 
     // Inverse Move-To Front
-    for(uint8_t i = 0; i < nSize; i++)
+    for(uint32_t i = 0; i < nSize; i++)
     {
         // Get the Characters in dictionary
         *(rString+i) = __dict.at(*(nArray+i));
