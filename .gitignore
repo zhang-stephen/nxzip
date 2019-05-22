@@ -6,3 +6,5 @@
 *.exe
 main.cpp
 /data
+/test/obj
+test/*.exe
