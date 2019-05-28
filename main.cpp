@@ -35,17 +35,9 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<int> dictSize("s", "size", "BWT Dictionary size", false, 1u, &aSize);
 		nxzCmd.add(dictSize);
 
-		// -v/--visual: Output the Operation Log
-		TCLAP::SwitchArg visualFLag("v", "verbose", "Show the Operation Log on Terminal", false);
-		nxzCmd.add(visualFLag);
-
 		// -r/--remove: delete source file or not after operation completed
 		TCLAP::SwitchArg rmFlag("r", "remove", "Delete source file after operation completed", false);
 		nxzCmd.add(rmFlag);
-
-		// -m/--comment: Add comment to zipx file
-		TCLAP::ValueArg<std::string> commnetStr("m", "comment", "Add comment to the Compressed file", false, "default", "string");
-		nxzCmd.add(commnetStr);
 
 		// -u/--unzip: Compress or Decompress
 		TCLAP::SwitchArg unzipFlag("u", "unzip", "Decompress if this flag existed and ignore other flags", false);
@@ -54,6 +46,10 @@ int main(int argc, char* argv[])
 		// -R/--read: read compressed file infomation
 		TCLAP::SwitchArg readinfo("R", "read", "Show Compressed File Information and ignore other flags", false);
 		nxzCmd.add(readinfo);
+
+		// -T/--test: basic or combined test
+		TCLAP::ValueArg<uint8_t> testArg("T", "test", "Algorithm Test for Debugging", false, 0, "uint8_t");
+		nxzCmd.add(testArg);
 
 		/* Command Line Praser */
 		nxzCmd.parse(argc, argv);
@@ -64,6 +60,13 @@ int main(int argc, char* argv[])
 		std::string comment;
 
 		/* NXZIP Operations */
+
+		if(testArg.getValue() > 0u)
+		{
+			NXZIP::NXZ_BasicStream_Test(ifile);
+			return EXIT_SUCCESS;
+		}
+
 		// Show info
 		if(readinfo.getValue() == true)
 		{

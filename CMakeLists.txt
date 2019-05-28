@@ -33,6 +33,7 @@ include_directories(
 	./logger			# the logger module
 	./movetofront		# the MTF header and source file
 	./rlc 				# the RLE header and source file
+	./test 				# the test function
 	./					# main directory
 )
 
@@ -46,6 +47,7 @@ aux_source_directory(./movetofront SRC_LIST)	# The MTF Algorithm
 aux_source_directory(./rlc SRC_LIST)			# The RLEC Algorithm
 # aux_source_directory(./huffman/legacy SRC_LIST) # The Huffman Algorithm
 aux_source_directory(./huffman SRC_LIST)		# The New Huffman Algorithm
+aux_source_directory(./test SRC_LIST)			# for Test
 aux_source_directory(./ SRC_LIST)				# The MainCpp Path
 
 # Target Building

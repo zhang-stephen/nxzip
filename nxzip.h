@@ -17,6 +17,7 @@
 #include "logger/log.h"
 #include "movetofront/mtf.h"
 #include "rlc/rlc.h"
+#include "test/ntest.h"
 
 #endif /*__NXZIP*/
 

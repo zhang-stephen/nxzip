@@ -34,6 +34,14 @@ namespace NXZIP::utility
 			std::copy(x.uptr+begin, x.uptr+end, uptr);
 		}
 
+		VLBUFF(uint8_t* src, uint32_t size)
+		{
+			ulength = size;
+			uptr = new uint8_t[ulength];
+
+			std::copy(src, src+size, uptr);
+		}
+
 		VLBUFF()
 		{
 			uptr = nullptr; ulength = 0u; posbuff = 0u;
