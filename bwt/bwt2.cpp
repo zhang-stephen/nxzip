@@ -7,8 +7,10 @@
 #include <algorithm>
 #include <vector>
 #include <cstring>
+#include <numeric>
 
 #include "bwt.h"
+#include "../nxzutil.h"
 
 /* Anoymous Namespace */
 namespace
@@ -22,34 +24,6 @@ namespace
 		/* default constructor */
 		suffix() { index = 0u; rank[0] = 0u; rank[1] = 0u; }
 	};
-	
-	/* bucket Sort */
-	void char_sort_to(const char *base, size_t sz, char *output) 
-	{
-		uint32_t buckets[256];
-		memset(buckets, 0, sizeof(uint32_t)*256);
-		size_t i = 0;
-
-		for (; i + 4 < sz; i += 4) 
-		{
-			const char *ptr = base + i;
-			buckets[(uint8_t)ptr[0]]++;
-			buckets[(uint8_t)ptr[1]]++;
-			buckets[(uint8_t)ptr[2]]++;
-			buckets[(uint8_t)ptr[3]]++;
-		}
-
-		for (; i < sz; i++) 
-		{
-			const char *ptr = base + i;
-			buckets[(uint8_t)ptr[0]]++;
-		}
-
-		for (uint16_t i = 0; i < 256; i++) {
-			memset(output, static_cast<char>(i), buckets[i]);
-			output += buckets[i];
-		}
-	}
 }
 
 /* Public Class BWT functions */
@@ -177,7 +151,7 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 		tmp = suffixes[i].index;
 		bwt->cstr[i] = (tmp != 0u) ? srcArray[tmp-1u] : srcArray[length-1u];
 
-		if(tmp == 0u) { bwt->index = i - 1u; }
+		if(tmp == 0u) { bwt->index = i; }
 	}
 
 	return true;
@@ -185,11 +159,6 @@ bool NXZIP::NXZ_BWTransform2(uint8_t* srcArray, uint32_t length, NXZIP::BWT* bwt
 
 /**
  * @brief 	The Inverse-BWT Algorithm 2
- * @param 	BWT* ibwt: the BWT Data Structure(member length maybe zero)
- * @param 	uint32_t length: the length of dstArray
- * @param 	uint8_t* dstArray: the result of IBWT 
- * @return 	bool: true means no error occured
- * @note	!!! Length of srcArray must be as same as bwt->length
  */
 bool NXZIP::NXZ_BWTransform_Inverse2(uint8_t* srcArray, uint32_t length, uint32_t index, uint8_t* dstArray)
 {
@@ -199,45 +168,42 @@ bool NXZIP::NXZ_BWTransform_Inverse2(uint8_t* srcArray, uint32_t length, uint32_
 		return false;
 	}
 
-	char *F = new char[length];
-    uint32_t *C = new uint32_t[length];
-    char_sort_to((const char*)srcArray, length, F);
+	uint8_t* L = srcArray;
 
-    /* marks first occurrence of char in F */
-    int32_t M[256];
-    memset(M, 0xff, sizeof(int32_t)*256);
-    for (size_t i = 0; i < length; i++) 
+	/* code based on pseudo code from section 4.2 (D1 and D2) follows */
+	uint32_t count[256] = {0u};
+	std::vector<uint32_t> pred(length, 0);
+
+	/*******************************************************************
+	 * Set pred[i] to the number of times block[i] appears in the
+	 * substring block[0 .. i - 1].  As a useful side effect count[i]
+	 * will be the number of times character i appears in block.
+	*******************************************************************/
+	for (uint32_t i = 0; i < length; i++)
 	{
-    	uint8_t k = F[i];
-    	if (M[k] < 0) { M[k] = i; }
-    }
+		pred[i] = count[L[i]];
+		count[L[i]]++;
+	}
 
-    /* marks number of occurences of L[j] in L for all j */
-    uint32_t tmp[256];
-    memset(tmp, 0, sizeof(int32_t)*256);
-    memset(C, 0, sizeof(uint32_t)*length);
-    for (size_t i = 0; i < length; i++) 
+	/*******************************************************************
+	 * Finally, set count[i] to the number of characters in block
+	 * lexicographically less than i.
+	*******************************************************************/
+	uint32_t sum = 0;
+	for(uint32_t i = 0; i <= 255; i++)
 	{
-        uint8_t k = srcArray[i];
-        C[i] = tmp[k]++;
-    }
+		uint32_t j = count[i];
+		count[i] = sum;
+		sum += j;
+	}
 
-    /* compute ibwt backwards */
-    char *buf = new char[length];
-    char *ptr = buf + length - 1;
-    *ptr-- = F[0];
-    uint32_t j = 0;
-    for (size_t i = 1; i < length; i++) 
+	/* construct the initial unrotated string (S[0]) */
+	uint32_t i = index;
+	for(uint32_t j = length; j > 0; j--)
 	{
-        *ptr-- = srcArray[j];
-        j = M[(uint8_t)srcArray[j]] + C[j];
-    }
-
-	std::copy(buf, buf+length, dstArray);
-
-    delete[] F;
-    delete[] C;
-    delete[] buf;
+		dstArray[j - 1] = L[i];
+		i = pred[i] + count[L[i]];
+	}
 
 	return true;
 }
