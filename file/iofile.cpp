@@ -149,7 +149,7 @@ namespace
 			uint32_t _s_rbsize =  std::fread((void*)rbuff, sizeof(uint8_t), rbsize, _p_fp);
 			if(rbsize > _s_rbsize)
 			{
-				if(std::feof(_p_fp) != 0u) { return 1u; }
+				if(std::feof(_p_fp) == 0u) { return -3; }
 				else { return _s_rbsize; }
 			}
 			return 0u;
@@ -255,7 +255,7 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 	uint32_t tmpfsize = ::file_size(ifile.c_str());
 	uint32_t rbuffsize = rblevel * 100u * __sizeof_kilobytes;
 
-	NXZ_TRACE_INFO("Input File Size: %ld", tmpfsize);
+	// NXZ_TRACE_INFO("Input File Size: %ld", tmpfsize);
 
 	/* try to open files */
 	::_io_file I_fp(ifile.c_str(), "r"),
@@ -293,7 +293,7 @@ void NXZIP::NXZ_Compress(std::string& ifile, NXZIP::utility::CLIOPS& ops, std::s
 	/* write data block into xzp file */
 	for(uint32_t i = 0u; i < fheader.zipxCountDataBlocks; i++)
 	{
-		NXZ_PRINT("Compress is ongoing. Blocks: %d/%d", i+1, fheader.zipxCountDataBlocks);
+		// NXZ_PRINT("Compress is ongoing. Blocks: %d/%d", i+1, fheader.zipxCountDataBlocks);
 
 		uint32_t tmprbsize = (i == fheader.zipxCountDataBlocks - 1u && tmpfsize % rbuffsize != 0u) ? 
 								tmpfsize - rbuffsize * i : 
@@ -392,13 +392,12 @@ ERR_READFAIL:
 	if(!O_fp.is_open()) {NXZ_PRINT("[ERROR]->No Permission to Write this Directory"); return ; }
 
 	/* Create Temporary Variables for Decompressing */
-	// std::vector<uint32_t> _g_db_info(1u + 1u + 1u + 1u + 256u, 0u);
 	std::vector<uint32_t> _g_db_info(5u, 0u);
 
 	/* read data block and decompress */
 	for(uint32_t i = 0u; i < _db_count; i++)
 	{
-		NXZ_PRINT("Decompress is ongoing. Blocks: %d/%d", i+1, _db_count);
+		// NXZ_PRINT("Decompress is ongoing. Blocks: %d/%d", i+1, _db_count);
 
 		/* read datablock info */
 		if(I_fp.read((uint8_t*)&_g_db_info[0u], _g_db_info.size() * sizeof(uint32_t)) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt", i); return ; }
@@ -408,6 +407,7 @@ ERR_READFAIL:
 		/* read Byte Stream */
 		utility::VLBUFF _x_rbuff(_g_db_info[4]);
 		if(I_fp.read(_x_rbuff, _x_rbuff.ulength) != 0u) { NXZ_PRINT("[ERROR]->Read Datablock: %d Failed, Compressed File is Corrupt", i); return ; }
+		// NXZ_TRACE_INFO("FILE Pointer offset: 0x%x", std::ftell(I_fp.get_fp()));
 
 		//utility::VLBUFF _x_tmp, _x_rlc;	/* _x_rlc for RLE before Order-zero code */
 		utility::VLBUFF _x_rlc(_g_db_info[3]);
@@ -421,17 +421,17 @@ ERR_READFAIL:
 
 		/* Inverse Move-To-Front Transform */
 		utility::VLBUFF _x_bwt(_g_db_info[1u]);
-		if(!NXZ_MoveToFront_Inverse(_x_mtf.uptr, _x_mtf.ulength-1, _x_bwt.uptr)) { NXZ_PRINT("[ERROR]->Inverse-MTF Failed in %d block", i); return ; }
+		if(!NXZ_MoveToFront_Inverse(_x_mtf.uptr, _x_mtf.ulength, _x_bwt.uptr)) { NXZ_PRINT("[ERROR]->Inverse-MTF Failed in %d block", i); return ; }
 
 		/* Inverse Burrows-Wheeler Transform */
 		utility::VLBUFF _x_obuff(_g_db_info[1u]);
 		if(!NXZ_BWTransform_Inverse2(_x_bwt.uptr, _x_bwt.ulength, _g_db_info[2u], _x_obuff.uptr)) { NXZ_PRINT("[ERROR]->Inverse-BWT Failed in %d block", i); return ; }
 
 		/* CRC-32c for data block */
-		if(_g_db_info[0u] != NXZ_CRC32_Calculate(0u, _x_obuff.uptr, _x_obuff.ulength)) { NXZ_PRINT("[WARNING]->CRC Failed in %d block, Compressed File maybe Corrupt", i); }
+		//if(_g_db_info[0u] != NXZ_CRC32_Calculate(0u, _x_obuff.uptr, _x_obuff.ulength)) { NXZ_PRINT("[WARNING]->CRC Failed in %d block, Compressed File maybe Corrupt", i); }
 
 		/* Write into outfile */
-		O_fp.write(_x_obuff);
+		if(O_fp.write(_x_obuff) != 0u) { NXZ_PRINT("[ERROR]->Write Data Block %d Failed", i); return ; }
 	}
 
 	/* Close Files */

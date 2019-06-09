@@ -4,14 +4,12 @@
  */
 
 #include <iostream>
-#include <filesystem>
 #include <cstdlib>
 
 #include "tclap/CmdLine.h"
 #include "nxzip.h"
 #include "nxzutil.h"
 
-namespace fs = std::filesystem;
 namespace nxzutil = NXZIP::utility;
 
 /**
@@ -47,10 +45,6 @@ int main(int argc, char* argv[])
 		TCLAP::SwitchArg readinfo("R", "read", "Show Compressed File Information and ignore other flags", false);
 		nxzCmd.add(readinfo);
 
-		// -T/--test: basic or combined test
-		TCLAP::ValueArg<uint8_t> testArg("T", "test", "Algorithm Test for Debugging", false, 0, "uint8_t");
-		nxzCmd.add(testArg);
-
 		/* Command Line Praser */
 		nxzCmd.parse(argc, argv);
 		
@@ -60,13 +54,6 @@ int main(int argc, char* argv[])
 		std::string comment;
 
 		/* NXZIP Operations */
-
-		if(testArg.getValue() > 0u)
-		{
-			NXZIP::NXZ_BasicStream_Test(ifile);
-			return EXIT_SUCCESS;
-		}
-
 		// Show info
 		if(readinfo.getValue() == true)
 		{

@@ -44,6 +44,19 @@ void NXZIP::NXZ_BasicStream_Test(const std::string& ifile)
 	uint8_t* xxbuff1 = new uint8_t[rbsize]{0u};
 	uint8_t* xxbuff2 = new uint8_t[rbsize]{0u};
 
+	rbuff[0] = 't';
+	rbuff[1] = 'h';
+	rbuff[2] = 'i';
+	rbuff[3] = 's';
+	rbuff[4] = ' ';
+	rbuff[5] = 'i';
+	rbuff[6] = 's';
+	rbuff[7] = ' ';
+	rbuff[8] = 't';
+	rbuff[9] = 'h';
+	rbuff[10] = 'e';
+	rbsize = 11;
+
 	/* try to process it */
 	/* Burrows-Wheeler Transform */
 	BWT mybwt(rbsize);
@@ -52,6 +65,14 @@ void NXZIP::NXZ_BasicStream_Test(const std::string& ifile)
 
 	if(std::memcmp(rbuff, xxbuff2, rbsize) != 0) {std::cout << "Error: BWT Failed!" << std::endl; }
 	else {std::cout << "Info: BWT Okay!" << std::endl; }
+
+	std::FILE* fp = std::fopen("E:/Projects/BWT/nxzip/data/xx.c", "wb");
+	std::fwrite(xxbuff2, 1, rbsize, fp);
+	std::fclose(fp);
+
+	std::FILE* fp2 = std::fopen("E:/Projects/BWT/nxzip/data/yy.c", "wb");
+	std::fwrite(mybwt.cstr, 1, rbsize, fp2);
+	std::fclose(fp2);
 
 	std::memset(xxbuff1, 0u, rbsize);
 	std::memset(xxbuff2, 0u, rbsize);
@@ -85,5 +106,6 @@ void NXZIP::NXZ_BasicStream_Test(const std::string& ifile)
 	
 	delete[] xxbuff1;
 	delete[] xxbuff2;
+	delete[] rbuff;
 }
 

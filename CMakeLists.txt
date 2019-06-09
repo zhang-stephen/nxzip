@@ -9,8 +9,8 @@ cmake_minimum_required(VERSION 3.10)
 project(nxzip)
 
 # ISO C++17
-set(CMAKE_CXX_STANDARD 17)					# C++ Standard
-set(CMAKE_CXX_STANDARD_REQUIRED 17)			# Require C++17 to Compile(use the filesystem in c++17, not boost::filesystem)
+set(CMAKE_CXX_STANDARD 11)					# C++ Standard
+set(CMAKE_CXX_STANDARD_REQUIRED 11)			# Require C++17 to Compile(use the filesystem in c++17, not boost::filesystem)
 
 option(NXZ_DEBUG "" ON)
 
@@ -38,7 +38,7 @@ include_directories(
 )
 
 # Add Compiler Options
-set(CMAKE_CXX_FLAGS "-msse4.2 -g ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-msse4.2 -g -O3 ${CMAKE_CXX_FLAGS}")
 
 # Source Path
 aux_source_directory(./bwt SRC_LIST)			# The BWT Algorithm
