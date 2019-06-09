@@ -24,13 +24,20 @@ BWT算法唯一的难点在于内存，随着原数组的增长，原理算法�
 - [x] 使用quick sort替换bubble sort(注：实际使用merge sort)
 - [x] 实现基本的MTF和IMTF算法
 - [x] 实现`Huffman Coding`算法
-- [ ] 实现范式`Huffman Coding`算法
-- [ ] 实现仅利用`STL`的文件读写和其他`file IO`
+- [x] 实现范式`Huffman Coding`算法
+- [x] 实现仅利用`STL`的文件读写和其他`file IO`
 - [x] 定义压缩文件的结构
 - [x] 实现软件的CRC-32C校验算法
 - [x] 实现基于SSE4.2指令集的CRC-32C算法
 
 #### 其他
+2019-06-09 Freeze This Project
+毕业设计业已完成，虽然程序仍有些许错误，但是眼下亦无时间修复订正，留待日后解决
+算法的世界是很奇妙的，希望日后仍有机会遨游其中
+
+已知问题：
+1. BWT算法的正变换和逆变换无法对应，导致解压时CRC32校验失败（Fatal Error）
+2. 文件结构中一些冗余成分未能删除
 
 ---
 `created by vscode, wrote with markdown(MPE), 2019.02.04`
